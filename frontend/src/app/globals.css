@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+:root {
+  --background: #080a0f;
+  --foreground: #f1f5f9;
+  --card-bg: #0e121b;
+  --card-border: #1e2638;
+  --accent-cyan: #06b6d4;
+  --accent-emerald: #10b981;
+  --accent-ruby: #ef4444;
+  --accent-amber: #f59e0b;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Custom Scrollbar for high-density trading data */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0a0e17;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+/* Institutional Terminal Accents */
+.terminal-card {
+  background-color: #0d111a;
+  border: 1px solid #1a2233;
+  border-radius: 0.5rem;
+}
+
+.terminal-card:hover {
+  border-color: #26334d;
+}
+
+.glow-emerald {
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+}
+
+.glow-ruby {
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);
+}
+
+.glow-cyan {
+  box-shadow: 0 0 15px rgba(6, 182, 212, 0.2);
+}
