@@ -1,58 +1,78 @@
 @import "tailwindcss";
 
 :root {
-  --background: #080a0f;
-  --foreground: #f1f5f9;
-  --card-bg: #0e121b;
-  --card-border: #1e2638;
-  --accent-cyan: #06b6d4;
-  --accent-emerald: #10b981;
-  --accent-ruby: #ef4444;
-  --accent-amber: #f59e0b;
+  --background: #0f1117;
+  --background-secondary: #151922;
+  --card-bg: #191f2b;
+  --surface-elevated: #202838;
+  --border-subtle: #2a3445;
+  --accent-blue: #3b82f6;
+  --accent-blue-hover: #2563eb;
+  --success: #10b981;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
 }
 
 body {
   background-color: var(--background);
-  color: var(--foreground);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: var(--text-primary);
+  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom Scrollbar for high-density trading data */
+/* Tabular figures for financial numbers */
+.num-tabular {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: #0a0e17;
+  background: #0f1117;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
-  border-radius: 3px;
+  background: #2a3445;
+  border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: #3b82f6;
 }
 
-/* Institutional Terminal Accents */
-.terminal-card {
-  background-color: #0d111a;
-  border: 1px solid #1a2233;
+/* Institutional Fintech Design Utilities */
+.fintech-card {
+  background-color: #191f2b;
+  border: 1px solid #2a3445;
+  border-radius: 0.75rem; /* 12px */
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.fintech-card:hover {
+  border-color: #38455c;
+}
+
+.fintech-card-elevated {
+  background-color: #202838;
+  border: 1px solid #2a3445;
+  border-radius: 0.75rem;
+}
+
+.fintech-input {
+  background-color: #151922;
+  border: 1px solid #2a3445;
+  color: #f1f5f9;
   border-radius: 0.5rem;
 }
 
-.terminal-card:hover {
-  border-color: #26334d;
-}
-
-.glow-emerald {
-  box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
-}
-
-.glow-ruby {
-  box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);
-}
-
-.glow-cyan {
-  box-shadow: 0 0 15px rgba(6, 182, 212, 0.2);
+.fintech-input:focus {
+  outline: none;
+  border-color: #3b82f6;
 }

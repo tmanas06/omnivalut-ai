@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Navbar from "@/components/Navbar";
 import OverviewDashboard from "@/components/OverviewDashboard";
+import MarketsDashboard from "@/components/MarketsDashboard";
 import AgentControlCenter from "@/components/AgentControlCenter";
 import TradingTerminal from "@/components/TradingTerminal";
 import PortfolioManager from "@/components/PortfolioManager";
@@ -97,7 +98,7 @@ export default function Home() {
   const circuitBreakerActive = overview?.circuit_breaker_active ?? false;
 
   return (
-    <div className="min-h-screen bg-[#080a0f] text-slate-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-[#0F1117] text-[#F1F5F9] flex flex-col font-sans">
       {/* Top Navigation */}
       <Navbar
         circuitBreakerActive={circuitBreakerActive}
@@ -111,11 +112,17 @@ export default function Home() {
         {activeTab === "overview" && (
           <OverviewDashboard overview={overview} onNavigate={setActiveTab} />
         )}
-        {activeTab === "validation" && (
-          <QuantitativeValidationDashboard onRefresh={refreshAllData} />
+        {activeTab === "markets" && (
+          <MarketsDashboard onNavigate={setActiveTab} />
         )}
-        {activeTab === "evaluation" && (
-          <StrategyEvaluationDashboard onRefresh={refreshAllData} />
+        {(activeTab === "strategies" || activeTab === "evaluation") && (
+          <StrategyEvaluationDashboard onRefresh={refreshAllData} defaultTab="leaderboard" />
+        )}
+        {activeTab === "experiments" && (
+          <StrategyEvaluationDashboard onRefresh={refreshAllData} defaultTab="experiments" />
+        )}
+        {(activeTab === "analytics" || activeTab === "validation") && (
+          <QuantitativeValidationDashboard onRefresh={refreshAllData} />
         )}
         {activeTab === "explorer" && (
           <TestnetExplorer />
@@ -141,27 +148,31 @@ export default function Home() {
       </main>
 
       {/* Institutional Footer */}
-      <footer className="border-t border-slate-900 bg-[#06080c] py-4 text-xs font-mono text-slate-500">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <footer className="border-t border-[#2A3445] bg-[#151922] py-4 text-xs font-sans text-[#94A3B8]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center space-x-2">
-            <span className="font-bold text-slate-300">OmniVault AI</span>
-            <span>•</span>
-            <span>HSK Chain India Hackathon (Track: AI Agent Trading)</span>
+            <span className="font-semibold text-[#F1F5F9]">OmniVault AI</span>
+            <span className="text-[#2A3445]">•</span>
+            <span>Institutional Multi-Agent DeFi Asset Management</span>
+            <span className="text-[#2A3445]">•</span>
+            <span className="text-[11px] px-2 py-0.5 rounded bg-[#202838] border border-[#2A3445] text-[#94A3B8]">
+              HashKey Chain Testnet (133)
+            </span>
           </div>
 
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-1.5">
-              <span className={`h-1.5 w-1.5 rounded-full ${wsConnected ? "bg-emerald-400" : "bg-amber-400"}`}></span>
-              <span>WS Telemetry: {wsConnected ? "Connected" : "Polling"}</span>
+              <span className={`h-1.5 w-1.5 rounded-full ${wsConnected ? "bg-[#10B981]" : "bg-[#F59E0B]"}`}></span>
+              <span>WS Feed: {wsConnected ? "Connected" : "Polling"}</span>
             </div>
-            <span>•</span>
+            <span className="text-[#2A3445]">•</span>
             <a
               href="https://hashkey.blockscout.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-cyan-400 hover:text-cyan-300 flex items-center space-x-1"
+              className="text-[#3B82F6] hover:text-blue-400 flex items-center space-x-1 transition"
             >
-              <span>HashKey Explorer</span>
+              <span>Blockscout Explorer</span>
               <ExternalLink className="h-3 w-3" />
             </a>
           </div>

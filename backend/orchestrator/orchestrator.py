@@ -530,6 +530,10 @@ class CentralOrchestrator:
         self.log_decision("MANUAL_REJECTION", cid, position_id, f"User dismissed exit proposal for {position_id[:8]}: {reason}")
         return {"status": "DISMISSED", "position_id": position_id, "reason": reason}
 
+    @property
+    def is_autonomous_loop_running(self) -> bool:
+        return self.is_loop_running
+
     def start_autonomous_loop(self, interval_seconds: int = 15):
         """Start the continuous autonomous trading intelligence loop."""
         if self.is_loop_running:

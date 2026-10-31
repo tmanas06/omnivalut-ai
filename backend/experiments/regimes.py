@@ -125,12 +125,13 @@ class MarketRegimeClassifier:
 
     def evaluate_strategy_regime_performance(
         self,
-        trades: List[Dict[str, Any]],
+        trades: Optional[List[Dict[str, Any]]] = None,
     ) -> Dict[str, Any]:
         """
         Attribution analysis: groups trades by (strategy, market_regime) and
         identifies strategies that consistently underperform under specific conditions.
         """
+        trades = trades or []
         regimes = [
             MarketRegimeType.BULLISH_TREND.value,
             MarketRegimeType.BEARISH_TREND.value,

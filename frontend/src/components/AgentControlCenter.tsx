@@ -18,7 +18,7 @@ import {
   DollarSign,
   Percent,
   ArrowRight,
-  Calculator,
+  Calculator
 } from "lucide-react";
 import { toggleAgent, fetchStrategyPerformance } from "@/lib/api";
 
@@ -66,19 +66,31 @@ export default function AgentControlCenter({ agentsData, onRefresh }: AgentProps
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-4">
-        <div>
-          <h2 className="text-lg font-bold text-slate-100 flex items-center space-x-2">
-            <Cpu className="h-5 w-5 text-cyan-400" />
-            <span>Autonomous Multi-Agent Control Center</span>
-          </h2>
-          <p className="text-xs text-slate-400 font-mono mt-1">
-            Specialized AI trading agents collaborating under deterministic risk engine supervision.
-          </p>
-        </div>
-        <div className="mt-3 sm:mt-0 flex items-center space-x-2 font-mono text-xs text-slate-400 bg-slate-900 px-3 py-1.5 rounded border border-slate-800">
-          <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span>Orchestrator Cycle: 15s interval</span>
+      <div className="fintech-card p-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center space-x-3">
+            <div className="h-10 w-10 rounded-lg bg-[#202838] border border-[#2A3445] flex items-center justify-center text-[#3B82F6]">
+              <Cpu className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="flex items-center space-x-2">
+                <h1 className="text-xl font-semibold text-[#F1F5F9] tracking-tight">
+                  Autonomous Multi-Agent Orchestration
+                </h1>
+                <span className="text-[11px] px-2 py-0.5 rounded-md bg-[#202838] text-[#10B981] border border-[#2A3445] font-medium">
+                  7 Active Agents
+                </span>
+              </div>
+              <p className="text-xs text-[#94A3B8] mt-0.5">
+                Specialized AI trading agents collaborating under deterministic risk engine supervision.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2 text-xs text-[#94A3B8] bg-[#151922] px-3 py-1.5 rounded-lg border border-[#2A3445]">
+            <span className="h-2 w-2 rounded-full bg-[#10B981]"></span>
+            <span>Cycle cadence: 15s interval</span>
+          </div>
         </div>
       </div>
 
@@ -92,28 +104,32 @@ export default function AgentControlCenter({ agentsData, onRefresh }: AgentProps
           return (
             <div
               key={agent.agent_id}
-              className={`terminal-card p-5 transition-all ${
-                !agent.is_enabled ? "opacity-60 bg-slate-950/60" : "hover:border-cyan-800/60"
+              className={`fintech-card p-5 transition-all ${
+                !agent.is_enabled ? "opacity-60 bg-[#151922]" : "hover:border-[#3B82F6]/50"
               }`}
             >
               {/* Header: Name, Status & Toggle */}
               <div className="flex items-start justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className={`p-2.5 rounded-lg ${agent.is_enabled ? "bg-cyan-950/60 text-cyan-400 border border-cyan-800/80" : "bg-slate-900 text-slate-500"}`}>
+                  <div className={`p-2.5 rounded-lg border ${
+                    agent.is_enabled
+                      ? "bg-[#202838] text-[#3B82F6] border-[#2A3445]"
+                      : "bg-[#151922] text-[#94A3B8] border-[#2A3445]"
+                  }`}>
                     <Icon className="h-5 w-5" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-slate-100">{agent.name}</h3>
-                    <div className="flex items-center space-x-2 mt-0.5 font-mono text-[11px]">
-                      <span className="text-slate-400">{agent.agent_id}</span>
-                      <span className="text-slate-600">•</span>
+                    <h2 className="text-sm font-semibold text-[#F1F5F9]">{agent.name}</h2>
+                    <div className="flex items-center space-x-2 mt-0.5 text-xs text-[#94A3B8]">
+                      <span className="font-mono text-[11px]">{agent.agent_id}</span>
+                      <span>•</span>
                       <span
-                        className={`font-semibold ${
+                        className={`font-medium ${
                           agent.status === "RUNNING"
-                            ? "text-amber-400"
+                            ? "text-[#F59E0B]"
                             : agent.status === "ERROR"
-                            ? "text-red-400"
-                            : "text-emerald-400"
+                            ? "text-[#EF4444]"
+                            : "text-[#10B981]"
                         }`}
                       >
                         {agent.is_enabled ? agent.status : "PAUSED"}
@@ -126,45 +142,45 @@ export default function AgentControlCenter({ agentsData, onRefresh }: AgentProps
                 <button
                   onClick={() => handleToggle(agent.agent_id, agent.is_enabled)}
                   disabled={isToggling}
-                  className="text-slate-400 hover:text-slate-200 transition focus:outline-none"
+                  className="text-[#94A3B8] hover:text-[#F1F5F9] transition focus:outline-none"
                   title={agent.is_enabled ? "Disable Agent" : "Enable Agent"}
                 >
                   {agent.is_enabled ? (
-                    <ToggleRight className="h-7 w-7 text-cyan-400" />
+                    <ToggleRight className="h-7 w-7 text-[#3B82F6]" />
                   ) : (
-                    <ToggleLeft className="h-7 w-7 text-slate-600" />
+                    <ToggleLeft className="h-7 w-7 text-[#94A3B8]/50" />
                   )}
                 </button>
               </div>
 
               {/* Description */}
-              <p className="text-xs text-slate-300 mt-3 line-clamp-2">
+              <p className="text-xs text-[#94A3B8] mt-3 leading-relaxed">
                 {agent.description}
               </p>
 
               {/* Metrics Grid */}
-              <div className="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-slate-800/80 text-xs font-mono">
-                <div className="bg-slate-900/50 p-2 rounded">
-                  <span className="text-[10px] text-slate-500 block">Total Runs</span>
-                  <span className="text-slate-200 font-bold">{agent.total_runs}</span>
+              <div className="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-[#2A3445] text-xs">
+                <div className="bg-[#151922] p-2.5 rounded-lg border border-[#2A3445]/60">
+                  <span className="text-[10px] text-[#94A3B8] block font-medium">TOTAL RUNS</span>
+                  <span className="text-[#F1F5F9] font-semibold num-tabular">{agent.total_runs}</span>
                 </div>
-                <div className="bg-slate-900/50 p-2 rounded">
-                  <span className="text-[10px] text-slate-500 block">Opportunities</span>
-                  <span className="text-cyan-400 font-bold">{agent.opportunities_found}</span>
+                <div className="bg-[#151922] p-2.5 rounded-lg border border-[#2A3445]/60">
+                  <span className="text-[10px] text-[#94A3B8] block font-medium">OPPORTUNITIES</span>
+                  <span className="text-[#3B82F6] font-semibold num-tabular">{agent.opportunities_found}</span>
                 </div>
-                <div className="bg-slate-900/50 p-2 rounded">
-                  <span className="text-[10px] text-slate-500 block">Interval</span>
-                  <span className="text-slate-200 font-bold">{agent.execution_interval_seconds}s</span>
+                <div className="bg-[#151922] p-2.5 rounded-lg border border-[#2A3445]/60">
+                  <span className="text-[10px] text-[#94A3B8] block font-medium">CADENCE</span>
+                  <span className="text-[#F1F5F9] font-semibold num-tabular">{agent.execution_interval_seconds}s</span>
                 </div>
               </div>
 
               {/* Supported Strategies & Assets */}
-              <div className="mt-3.5 space-y-1.5 text-[11px] font-mono">
+              <div className="mt-3.5 space-y-1.5 text-xs">
                 <div className="flex items-center space-x-2">
-                  <span className="text-slate-500">Strategies:</span>
+                  <span className="text-[#94A3B8]">Strategies:</span>
                   <div className="flex flex-wrap gap-1">
                     {(agent.supported_strategies || []).map((s: string) => (
-                      <span key={s} className="px-1.5 py-0.5 rounded bg-slate-900 text-slate-300 border border-slate-800 text-[10px]">
+                      <span key={s} className="px-2 py-0.5 rounded-md bg-[#151922] text-[#94A3B8] border border-[#2A3445] text-[10px] font-medium">
                         {s}
                       </span>
                     ))}
@@ -172,17 +188,17 @@ export default function AgentControlCenter({ agentsData, onRefresh }: AgentProps
                 </div>
 
                 <div className="flex items-center space-x-2">
-                  <span className="text-slate-500">Assets:</span>
-                  <span className="text-slate-300">{(agent.supported_assets || []).join(", ")}</span>
+                  <span className="text-[#94A3B8]">Assets:</span>
+                  <span className="text-[#F1F5F9] font-medium text-[11px]">{(agent.supported_assets || []).join(", ")}</span>
                 </div>
               </div>
 
               {/* Telemetry Output Snippet */}
               {tData?.data && (
-                <div className="mt-3 p-2 bg-black/40 rounded border border-slate-900 text-[10px] font-mono text-slate-400">
-                  <span className="text-slate-500">Telemetry: </span>
-                  <span className="text-slate-300">
-                    Cycle completed in {tData.duration_ms}ms • Signals: {tData.signals_produced} • Opps: {tData.opportunities_found}
+                <div className="mt-3 p-2.5 bg-[#151922] rounded-lg border border-[#2A3445] text-[11px] text-[#94A3B8]">
+                  <span>Telemetry: </span>
+                  <span className="text-[#F1F5F9]">
+                    Cycle: {tData.duration_ms}ms • Signals: {tData.signals_produced} • Opps: {tData.opportunities_found}
                   </span>
                 </div>
               )}
@@ -190,20 +206,20 @@ export default function AgentControlCenter({ agentsData, onRefresh }: AgentProps
           );
         })}
       </div>
-      
+
       {/* Strategy Agent Synthesis & Performance Breakdown */}
-      <div className="terminal-card p-5 mt-6 border-cyan-900/60">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
-          <div className="flex items-center space-x-2">
-            <TrendingUp className="h-5 w-5 text-cyan-400" />
+      <div className="fintech-card p-5">
+        <div className="flex items-center justify-between border-b border-[#2A3445] pb-3 mb-4">
+          <div className="flex items-center space-x-2.5">
+            <TrendingUp className="h-5 w-5 text-[#3B82F6]" />
             <div>
-              <h3 className="text-sm font-bold text-slate-100">Active Strategy Performance & Regimes</h3>
-              <p className="text-xs text-slate-400 font-mono">
+              <h2 className="text-sm font-semibold text-[#F1F5F9]">Active Strategy Performance &amp; Regimes</h2>
+              <p className="text-xs text-[#94A3B8] mt-0.5">
                 Real-time scoring combining Technical Analysis (RSI/MACD/BB), Arbitrage Spreads, and Liquidity Depth.
               </p>
             </div>
           </div>
-          <span className="text-[11px] font-mono text-cyan-300 bg-cyan-950/60 px-2.5 py-1 rounded border border-cyan-800">
+          <span className="text-xs text-[#10B981] bg-[#10B981]/10 px-2.5 py-1 rounded-md border border-[#10B981]/30 font-medium">
             Strategy Agent Active
           </span>
         </div>
@@ -247,26 +263,26 @@ export default function AgentControlCenter({ agentsData, onRefresh }: AgentProps
               description: "Bandwidth expansion + high volume surge confirmation"
             }
           ]).map((s: any) => (
-            <div key={s.strategy_id} className="bg-slate-900/70 p-3.5 rounded-lg border border-slate-800">
+            <div key={s.strategy_id} className="bg-[#151922] p-4 rounded-xl border border-[#2A3445]">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-slate-200 text-xs">{s.name}</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded font-mono bg-cyan-950 text-cyan-300 border border-cyan-800">
+                <span className="font-semibold text-[#F1F5F9] text-xs">{s.name}</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded font-medium bg-[#202838] text-[#3B82F6] border border-[#2A3445]">
                   {s.active_regime}
                 </span>
               </div>
-              <div className="mt-2.5 flex items-baseline justify-between font-mono">
-                <span className="text-xs text-slate-400">Win Rate:</span>
-                <span className="text-sm font-bold text-emerald-400">{s.win_rate_pct.toFixed(1)}%</span>
+              <div className="mt-3 flex items-baseline justify-between text-xs">
+                <span className="text-[#94A3B8]">Win Rate:</span>
+                <span className="font-semibold text-[#10B981] num-tabular">{s.win_rate_pct.toFixed(1)}%</span>
               </div>
-              <div className="mt-1 flex items-baseline justify-between font-mono text-xs">
-                <span className="text-slate-400">Net Realized:</span>
-                <span className="font-bold text-slate-100">+${s.total_realized_pnl_usd?.toFixed(2) || "0.00"}</span>
+              <div className="mt-1 flex items-baseline justify-between text-xs">
+                <span className="text-[#94A3B8]">Net Realized:</span>
+                <span className="font-semibold text-[#F1F5F9] num-tabular">+${s.total_realized_pnl_usd?.toFixed(2) || "0.00"}</span>
               </div>
-              <div className="mt-1 flex items-baseline justify-between font-mono text-xs">
-                <span className="text-slate-400">Trades:</span>
-                <span className="text-slate-300">{s.total_trades}</span>
+              <div className="mt-1 flex items-baseline justify-between text-xs">
+                <span className="text-[#94A3B8]">Trades:</span>
+                <span className="text-[#94A3B8] num-tabular">{s.total_trades}</span>
               </div>
-              <p className="mt-2 text-[10px] text-slate-400 font-mono border-t border-slate-800 pt-1.5 line-clamp-2">
+              <p className="mt-2 text-[11px] text-[#94A3B8] border-t border-[#2A3445] pt-2 line-clamp-2 leading-relaxed">
                 {s.description}
               </p>
             </div>
@@ -275,42 +291,42 @@ export default function AgentControlCenter({ agentsData, onRefresh }: AgentProps
       </div>
 
       {/* Arbitrage Engine Cost Decomposition Spec */}
-      <div className="terminal-card p-5 mt-4 border-amber-900/50 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950">
-        <div className="flex items-center space-x-2 border-b border-slate-800 pb-3 mb-3">
-          <Calculator className="h-5 w-5 text-amber-400" />
+      <div className="fintech-card p-5">
+        <div className="flex items-center space-x-2.5 border-b border-[#2A3445] pb-3 mb-3">
+          <Calculator className="h-5 w-5 text-[#F59E0B]" />
           <div>
-            <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider font-mono">
+            <h2 className="text-xs font-semibold text-[#F1F5F9] uppercase tracking-wider">
               Arbitrage Engine: Comprehensive Net Profit Decomposition
-            </h4>
-            <p className="text-[11px] text-slate-400 font-mono">
+            </h2>
+            <p className="text-xs text-[#94A3B8] mt-0.5">
               Zero naive price arbitrage. Trades are only proposed when Net Profit = Gross Profit - DEX Fees (2 Legs) - Gas (USD) - Slippage - Price Impact &gt; $0.50.
             </p>
           </div>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 text-center text-xs font-mono">
-          <div className="bg-slate-900/60 p-2.5 rounded border border-slate-800">
-            <span className="text-[10px] text-slate-400 block">Gross Dislocation</span>
-            <span className="text-cyan-300 font-bold">P_exit - P_entry</span>
+        <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 text-center text-xs">
+          <div className="bg-[#151922] p-2.5 rounded-lg border border-[#2A3445]">
+            <span className="text-[10px] text-[#94A3B8] block font-medium">Gross Dislocation</span>
+            <span className="text-[#3B82F6] font-mono font-semibold">P_exit - P_entry</span>
           </div>
-          <div className="bg-slate-900/60 p-2.5 rounded border border-slate-800">
-            <span className="text-[10px] text-slate-400 block">DEX Fees (2 Legs)</span>
-            <span className="text-red-400 font-bold">- (Fee_A + Fee_B)</span>
+          <div className="bg-[#151922] p-2.5 rounded-lg border border-[#2A3445]">
+            <span className="text-[10px] text-[#94A3B8] block font-medium">DEX Fees (2 Legs)</span>
+            <span className="text-[#EF4444] font-mono font-semibold">- (Fee_A + Fee_B)</span>
           </div>
-          <div className="bg-slate-900/60 p-2.5 rounded border border-slate-800">
-            <span className="text-[10px] text-slate-400 block">Estimated Gas</span>
-            <span className="text-red-400 font-bold">- (Gas × GasPrice)</span>
+          <div className="bg-[#151922] p-2.5 rounded-lg border border-[#2A3445]">
+            <span className="text-[10px] text-[#94A3B8] block font-medium">Estimated Gas</span>
+            <span className="text-[#EF4444] font-mono font-semibold">- (Gas × Price)</span>
           </div>
-          <div className="bg-slate-900/60 p-2.5 rounded border border-slate-800">
-            <span className="text-[10px] text-slate-400 block">Price Impact</span>
-            <span className="text-red-400 font-bold">- Size / Depth</span>
+          <div className="bg-[#151922] p-2.5 rounded-lg border border-[#2A3445]">
+            <span className="text-[10px] text-[#94A3B8] block font-medium">Price Impact</span>
+            <span className="text-[#EF4444] font-mono font-semibold">- Size / Depth</span>
           </div>
-          <div className="bg-slate-900/60 p-2.5 rounded border border-slate-800">
-            <span className="text-[10px] text-slate-400 block">Slippage Buffer</span>
-            <span className="text-amber-400 font-bold">- Max 1.0%</span>
+          <div className="bg-[#151922] p-2.5 rounded-lg border border-[#2A3445]">
+            <span className="text-[10px] text-[#94A3B8] block font-medium">Slippage Buffer</span>
+            <span className="text-[#F59E0B] font-mono font-semibold">- Max 1.0%</span>
           </div>
-          <div className="bg-slate-900/60 p-2.5 rounded border border-emerald-800/80">
-            <span className="text-[10px] text-emerald-400 block">Gate Condition</span>
-            <span className="text-emerald-400 font-bold">Net Profit &gt; $0.50</span>
+          <div className="bg-[#151922] p-2.5 rounded-lg border border-[#10B981]/50">
+            <span className="text-[10px] text-[#10B981] block font-medium">Gate Condition</span>
+            <span className="text-[#10B981] font-mono font-semibold">Net &gt; $0.50</span>
           </div>
         </div>
       </div>

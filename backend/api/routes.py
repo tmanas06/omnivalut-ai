@@ -83,7 +83,7 @@ async def get_overview():
         "total_agents_count": len(agents),
         "circuit_breaker_active": orch.risk_engine.policy.emergency_pause_active,
         "auto_trading_enabled": orch.is_auto_trading_enabled,
-        "is_autonomous_loop_running": orch.is_autonomous_loop_running,
+        "is_autonomous_loop_running": getattr(orch, "is_autonomous_loop_running", getattr(orch, "is_loop_running", False)),
         "current_market": market,
         "recent_decisions": orch.decision_logs[-15:],
         "pending_proposals": list(orch.pending_proposals.values()),
@@ -1113,7 +1113,9 @@ async def get_market_regimes_endpoint():
         cross_tier_spread_pct=0.18,
     )
 
-    regime_attribution = regime_classifier.evaluate_strategy_regime_performance()
+    regime_attribution = regime_classifier.evaluate_strategy_regime_performance(
+        trades=orch.portfolio_tracker.trades_history if orch else []
+    )
 
     return {
         "current_market_regime": current_regime,

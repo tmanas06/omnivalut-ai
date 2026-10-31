@@ -28,6 +28,8 @@ import {
   AlertOctagon,
   Scale,
   Compass,
+  X,
+  ExternalLink
 } from "lucide-react";
 import {
   fetchStrategyLeaderboard,
@@ -49,10 +51,16 @@ import {
 
 interface StrategyEvaluationDashboardProps {
   onRefresh?: () => void;
+  defaultTab?: "leaderboard" | "regimes" | "risk_opt" | "exec_quality" | "experiments" | "health";
 }
 
-export default function StrategyEvaluationDashboard({ onRefresh }: StrategyEvaluationDashboardProps) {
-  const [activeTab, setActiveTab] = useState<"leaderboard" | "regimes" | "risk_opt" | "exec_quality" | "experiments" | "health">("leaderboard");
+export default function StrategyEvaluationDashboard({
+  onRefresh,
+  defaultTab = "leaderboard",
+}: StrategyEvaluationDashboardProps) {
+  const [activeTab, setActiveTab] = useState<
+    "leaderboard" | "regimes" | "risk_opt" | "exec_quality" | "experiments" | "health"
+  >(defaultTab);
   const [loading, setLoading] = useState<boolean>(false);
   const [actionLoading, setActionLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -84,6 +92,13 @@ export default function StrategyEvaluationDashboard({ onRefresh }: StrategyEvalu
   const [newExpDesc, setNewExpDesc] = useState<string>("");
   const [newExpCapital, setNewExpCapital] = useState<number>(1000);
 
+  // Sync defaultTab if changed from parent navigation
+  useEffect(() => {
+    if (defaultTab) {
+      setActiveTab(defaultTab);
+    }
+  }, [defaultTab]);
+
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -103,8 +118,9 @@ export default function StrategyEvaluationDashboard({ onRefresh }: StrategyEvalu
       if (eq) setExecQuality(eq);
       if (sh) setSystemHealth(sh);
       if (exps?.experiments) setExperiments(exps.experiments);
-    } catch (e: any) {
-      setError(e.message || "Failed to load strategy evaluation data.");
+    } catch (err: any) {
+      console.warn("Strategy evaluation data load warning:", err);
+      setError("Failed to load strategy evaluation metrics.");
     } finally {
       setLoading(false);
     }
@@ -112,18 +128,18 @@ export default function StrategyEvaluationDashboard({ onRefresh }: StrategyEvalu
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 12000);
+    const interval = setInterval(loadData, 15000);
     return () => clearInterval(interval);
   }, [loadData]);
 
-  const handleApproveRec = async (id: string) => {
+  const handleApproveRec = async (recId: string) => {
     setActionLoading(true);
     try {
-      await approveRiskRecommendation(id, "operator");
-      setSuccessMsg("Risk recommendation approved successfully.");
+      await approveRiskRecommendation(recId, "operator");
+      setSuccessMsg("Risk recommendation approved and applied to active policy.");
       loadData();
     } catch (e: any) {
-      setError(e.message || "Failed to approve recommendation.");
+      setError(e.message || "Approval failed.");
     } finally {
       setActionLoading(false);
       setTimeout(() => setSuccessMsg(null), 4000);
@@ -135,12 +151,12 @@ export default function StrategyEvaluationDashboard({ onRefresh }: StrategyEvalu
     setActionLoading(true);
     try {
       await rejectRiskRecommendation(rejectionModalId, rejectionReason, "operator");
-      setSuccessMsg("Risk recommendation rejected.");
       setRejectionModalId(null);
       setRejectionReason("");
+      setSuccessMsg("Risk recommendation rejected with audit rationale.");
       loadData();
     } catch (e: any) {
-      setError(e.message || "Failed to reject recommendation.");
+      setError(e.message || "Rejection failed.");
     } finally {
       setActionLoading(false);
       setTimeout(() => setSuccessMsg(null), 4000);
@@ -224,39 +240,39 @@ export default function StrategyEvaluationDashboard({ onRefresh }: StrategyEvalu
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-[#0d131f] to-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg">
+      <div className="fintech-card p-5">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center space-x-3">
-              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-600/20 border border-cyan-500/40 flex items-center justify-center">
-                <Scale className="h-5 w-5 text-cyan-400" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold tracking-tight text-slate-100 flex items-center space-x-2">
-                  <span>Phase 5: Autonomous Trading Evaluation & Risk Optimization</span>
-                  <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-semibold">
-                    EMPIRICAL BENCHMARK
-                  </span>
+          <div className="flex items-center space-x-3">
+            <div className="h-10 w-10 rounded-lg bg-[#202838] border border-[#2A3445] flex items-center justify-center text-[#3B82F6]">
+              <Scale className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="flex items-center space-x-2">
+                <h1 className="text-xl font-semibold text-[#F1F5F9] tracking-tight">
+                  Strategy Evaluation &amp; Risk Optimization
                 </h1>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Walk-Forward In-Sample / Out-Of-Sample validation, microstructural execution quality, and multi-metric strategy ranking.
-                </p>
+                <span className="text-[11px] font-sans px-2 py-0.5 rounded-md bg-[#202838] text-[#3B82F6] border border-[#2A3445] font-medium">
+                  Quantitative Benchmarking
+                </span>
               </div>
+              <p className="text-xs text-[#94A3B8] mt-0.5">
+                Walk-forward in-sample / out-of-sample validation, microstructural execution quality, and multi-metric strategy rankings.
+              </p>
             </div>
           </div>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2">
             <button
               onClick={loadData}
               disabled={loading}
-              className="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-xs font-mono text-slate-300 flex items-center space-x-1.5 transition-colors"
+              className="px-3 py-1.5 rounded-lg bg-[#202838] hover:bg-[#2A3445] text-[#F1F5F9] text-xs font-medium border border-[#2A3445] transition flex items-center space-x-1.5 disabled:opacity-50"
             >
-              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-cyan-400" : ""}`} />
-              <span>Refresh Telemetry</span>
+              <RefreshCw className={`h-3.5 w-3.5 text-[#94A3B8] ${loading ? "animate-spin" : ""}`} />
+              <span>Refresh</span>
             </button>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-xs font-semibold text-white shadow-md flex items-center space-x-1.5 transition-all"
+              className="px-3.5 py-1.5 rounded-lg bg-[#3B82F6] hover:bg-blue-600 text-white text-xs font-medium transition flex items-center space-x-1.5"
             >
               <Sliders className="h-3.5 w-3.5" />
               <span>New Experiment</span>
@@ -264,49 +280,49 @@ export default function StrategyEvaluationDashboard({ onRefresh }: StrategyEvalu
           </div>
         </div>
 
-        {/* Mode & Safety Notice Banner */}
-        <div className="mt-4 pt-3 border-t border-slate-800/80 grid grid-cols-1 md:grid-cols-4 gap-3 text-xs font-mono">
-          <div className="flex items-center space-x-2 text-slate-400">
-            <span className="h-2 w-2 rounded-full bg-emerald-400"></span>
-            <span>Execution Mode: <strong className="text-emerald-300">PAPER (Autonomous)</strong></span>
+        {/* Safety & Protocol Restrictions Bar */}
+        <div className="mt-4 pt-3 border-t border-[#2A3445] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+          <div className="flex items-center space-x-2 text-[#94A3B8]">
+            <span className="h-2 w-2 rounded-full bg-[#3B82F6]"></span>
+            <span>Execution: <strong className="text-[#F1F5F9] font-medium">PAPER (Autonomous)</strong></span>
           </div>
-          <div className="flex items-center space-x-2 text-slate-400">
-            <span className="h-2 w-2 rounded-full bg-amber-400"></span>
-            <span>Testnet Broadcast: <strong className="text-amber-300">MANUAL CONFIRMATION</strong></span>
+          <div className="flex items-center space-x-2 text-[#94A3B8]">
+            <span className="h-2 w-2 rounded-full bg-[#F59E0B]"></span>
+            <span>Testnet Broadcast: <strong className="text-[#F1F5F9] font-medium">Manual Confirmation</strong></span>
           </div>
-          <div className="flex items-center space-x-2 text-slate-400">
-            <span className="h-2 w-2 rounded-full bg-red-400"></span>
-            <span>Mainnet Trading: <strong className="text-red-300">DISABLED (Strict Rule 13)</strong></span>
+          <div className="flex items-center space-x-2 text-[#94A3B8]">
+            <span className="h-2 w-2 rounded-full bg-[#EF4444]"></span>
+            <span>Mainnet Trading: <strong className="text-[#F1F5F9] font-medium">Disabled (Rule 13)</strong></span>
           </div>
-          <div className="flex items-center space-x-2 text-slate-400">
-            <span className="h-2 w-2 rounded-full bg-blue-400"></span>
-            <span>Risk Tuning: <strong className="text-blue-300">HUMAN SIGN-OFF REQUIRED</strong></span>
+          <div className="flex items-center space-x-2 text-[#94A3B8]">
+            <span className="h-2 w-2 rounded-full bg-[#10B981]"></span>
+            <span>Risk Tuning: <strong className="text-[#F1F5F9] font-medium">Operator Sign-Off</strong></span>
           </div>
         </div>
       </div>
 
       {/* Notifications */}
       {error && (
-        <div className="p-3 bg-red-500/10 border border-red-500/40 rounded-lg text-xs font-mono text-red-300 flex items-center space-x-2">
+        <div className="p-3 bg-[#EF4444]/10 border border-[#EF4444]/30 rounded-xl text-xs text-[#EF4444] flex items-center space-x-2">
           <AlertOctagon className="h-4 w-4 shrink-0" />
           <span>{error}</span>
         </div>
       )}
       {successMsg && (
-        <div className="p-3 bg-emerald-500/10 border border-emerald-500/40 rounded-lg text-xs font-mono text-emerald-300 flex items-center space-x-2">
+        <div className="p-3 bg-[#10B981]/10 border border-[#10B981]/30 rounded-xl text-xs text-[#10B981] flex items-center space-x-2">
           <CheckCircle2 className="h-4 w-4 shrink-0" />
           <span>{successMsg}</span>
         </div>
       )}
 
       {/* Sub-Navigation Tabs */}
-      <div className="flex items-center space-x-1 border-b border-slate-800 pb-2 text-xs font-mono overflow-x-auto">
+      <div className="flex items-center space-x-1 border-b border-[#2A3445] pb-2 text-xs overflow-x-auto">
         <button
           onClick={() => setActiveTab("leaderboard")}
-          className={`px-3.5 py-1.5 rounded-lg transition-colors flex items-center space-x-1.5 ${
+          className={`px-3.5 py-1.5 rounded-lg transition font-medium flex items-center space-x-1.5 ${
             activeTab === "leaderboard"
-              ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold"
-              : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
+              ? "bg-[#3B82F6] text-white"
+              : "text-[#94A3B8] hover:text-[#F1F5F9] hover:bg-[#202838]"
           }`}
         >
           <Award className="h-3.5 w-3.5" />
@@ -315,10 +331,10 @@ export default function StrategyEvaluationDashboard({ onRefresh }: StrategyEvalu
 
         <button
           onClick={() => setActiveTab("regimes")}
-          className={`px-3.5 py-1.5 rounded-lg transition-colors flex items-center space-x-1.5 ${
+          className={`px-3.5 py-1.5 rounded-lg transition font-medium flex items-center space-x-1.5 ${
             activeTab === "regimes"
-              ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold"
-              : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
+              ? "bg-[#3B82F6] text-white"
+              : "text-[#94A3B8] hover:text-[#F1F5F9] hover:bg-[#202838]"
           }`}
         >
           <Compass className="h-3.5 w-3.5" />
@@ -327,16 +343,16 @@ export default function StrategyEvaluationDashboard({ onRefresh }: StrategyEvalu
 
         <button
           onClick={() => setActiveTab("risk_opt")}
-          className={`px-3.5 py-1.5 rounded-lg transition-colors flex items-center space-x-1.5 ${
+          className={`px-3.5 py-1.5 rounded-lg transition font-medium flex items-center space-x-1.5 ${
             activeTab === "risk_opt"
-              ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold"
-              : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
+              ? "bg-[#3B82F6] text-white"
+              : "text-[#94A3B8] hover:text-[#F1F5F9] hover:bg-[#202838]"
           }`}
         >
           <Sliders className="h-3.5 w-3.5" />
           <span>Walk-Forward Risk Opt</span>
           {recommendations.filter((r) => r.status === "PENDING_APPROVAL").length > 0 && (
-            <span className="px-1.5 py-0.2 bg-amber-500 text-black rounded-full font-bold text-[10px]">
+            <span className="px-1.5 py-0.2 bg-[#F59E0B] text-black rounded-full font-bold text-[10px]">
               {recommendations.filter((r) => r.status === "PENDING_APPROVAL").length}
             </span>
           )}
@@ -344,10 +360,10 @@ export default function StrategyEvaluationDashboard({ onRefresh }: StrategyEvalu
 
         <button
           onClick={() => setActiveTab("exec_quality")}
-          className={`px-3.5 py-1.5 rounded-lg transition-colors flex items-center space-x-1.5 ${
+          className={`px-3.5 py-1.5 rounded-lg transition font-medium flex items-center space-x-1.5 ${
             activeTab === "exec_quality"
-              ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold"
-              : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
+              ? "bg-[#3B82F6] text-white"
+              : "text-[#94A3B8] hover:text-[#F1F5F9] hover:bg-[#202838]"
           }`}
         >
           <Zap className="h-3.5 w-3.5" />
@@ -356,10 +372,10 @@ export default function StrategyEvaluationDashboard({ onRefresh }: StrategyEvalu
 
         <button
           onClick={() => setActiveTab("experiments")}
-          className={`px-3.5 py-1.5 rounded-lg transition-colors flex items-center space-x-1.5 ${
+          className={`px-3.5 py-1.5 rounded-lg transition font-medium flex items-center space-x-1.5 ${
             activeTab === "experiments"
-              ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold"
-              : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
+              ? "bg-[#3B82F6] text-white"
+              : "text-[#94A3B8] hover:text-[#F1F5F9] hover:bg-[#202838]"
           }`}
         >
           <Database className="h-3.5 w-3.5" />
@@ -368,16 +384,16 @@ export default function StrategyEvaluationDashboard({ onRefresh }: StrategyEvalu
 
         <button
           onClick={() => setActiveTab("health")}
-          className={`px-3.5 py-1.5 rounded-lg transition-colors flex items-center space-x-1.5 ${
+          className={`px-3.5 py-1.5 rounded-lg transition font-medium flex items-center space-x-1.5 ${
             activeTab === "health"
-              ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold"
-              : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
+              ? "bg-[#3B82F6] text-white"
+              : "text-[#94A3B8] hover:text-[#F1F5F9] hover:bg-[#202838]"
           }`}
         >
           <Server className="h-3.5 w-3.5" />
           <span>Autonomous Health</span>
           {systemHealth?.active_alerts?.length > 0 && (
-            <span className="px-1.5 py-0.2 bg-red-500 text-white rounded-full font-bold text-[10px]">
+            <span className="px-1.5 py-0.2 bg-[#EF4444] text-white rounded-full font-bold text-[10px]">
               {systemHealth.active_alerts.length}
             </span>
           )}
@@ -387,91 +403,93 @@ export default function StrategyEvaluationDashboard({ onRefresh }: StrategyEvalu
       {/* TAB 1: STRATEGY LEADERBOARD */}
       {activeTab === "leaderboard" && (
         <div className="space-y-4">
-          <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <h3 className="text-sm font-semibold text-slate-200 flex items-center space-x-2">
-                  <span>Strategy Performance Matrix & Composite Rankings</span>
-                  <span className="text-[11px] font-mono text-cyan-400 font-normal">
-                    (Formula: 35% Sharpe + 30% Profit Factor + 20% Win Rate - 15% MaxDD Penalty)
-                  </span>
-                </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Strategies are evaluated independently across all risk-adjusted parameters, preventing single-metric win rate bias.
-                </p>
+          <div className="fintech-card overflow-hidden">
+            <div className="px-5 py-4 border-b border-[#2A3445]">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                <h2 className="text-sm font-semibold text-[#F1F5F9]">
+                  Strategy Performance Matrix &amp; Composite Rankings
+                </h2>
+                <span className="text-[11px] text-[#94A3B8]">
+                  Formula: 35% Sharpe + 30% Profit Factor + 20% Win Rate - 15% MaxDD Penalty
+                </span>
               </div>
+              <p className="text-xs text-[#94A3B8] mt-1">
+                Strategies are evaluated independently across risk-adjusted parameters, preventing single-metric win rate bias.
+              </p>
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs font-mono">
-                <thead className="bg-slate-800/50 text-slate-400 border-b border-slate-700">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-[#151922] text-[#94A3B8] border-b border-[#2A3445]">
                   <tr>
-                    <th className="py-2.5 px-3">Rank</th>
-                    <th className="py-2.5 px-3">Strategy</th>
-                    <th className="py-2.5 px-3">Composite Score</th>
-                    <th className="py-2.5 px-3">Sharpe Ratio</th>
-                    <th className="py-2.5 px-3">Profit Factor</th>
-                    <th className="py-2.5 px-3">Win Rate</th>
-                    <th className="py-2.5 px-3">Max DD</th>
-                    <th className="py-2.5 px-3">Net Profit</th>
-                    <th className="py-2.5 px-3">Avg Holding</th>
-                    <th className="py-2.5 px-3">Avg Slippage</th>
-                    <th className="py-2.5 px-3">Confidence & Sample Size</th>
+                    <th className="py-3 px-4 font-medium">Rank</th>
+                    <th className="py-3 px-4 font-medium">Strategy</th>
+                    <th className="py-3 px-4 font-medium text-right">Composite</th>
+                    <th className="py-3 px-4 font-medium text-right">Sharpe</th>
+                    <th className="py-3 px-4 font-medium text-right">Profit Factor</th>
+                    <th className="py-3 px-4 font-medium text-right">Win Rate</th>
+                    <th className="py-3 px-4 font-medium text-right">Max DD</th>
+                    <th className="py-3 px-4 font-medium text-right">Net Profit</th>
+                    <th className="py-3 px-4 font-medium text-right">Avg Holding</th>
+                    <th className="py-3 px-4 font-medium text-right">Slippage</th>
+                    <th className="py-3 px-4 font-medium text-center">Confidence</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800">
+                <tbody className="divide-y divide-[#2A3445]">
                   {leaderboardData?.leaderboard?.map((s: any, idx: number) => {
                     const isTop = idx === 0;
                     return (
-                      <tr key={s.strategy} className={`hover:bg-slate-800/30 ${isTop ? "bg-cyan-500/5" : ""}`}>
-                        <td className="py-2.5 px-3 font-bold">
-                          <span className={`inline-flex items-center justify-center h-5 w-5 rounded-full ${
-                            isTop ? "bg-amber-500/20 text-amber-300 border border-amber-500/40" : "bg-slate-800 text-slate-400"
+                      <tr key={s.strategy} className={`hover:bg-[#202838]/50 transition ${isTop ? "bg-[#3B82F6]/5" : ""}`}>
+                        <td className="py-3 px-4 font-medium">
+                          <span className={`inline-flex items-center justify-center h-5 w-5 rounded-full text-[11px] font-semibold ${
+                            isTop ? "bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/40" : "bg-[#202838] text-[#94A3B8]"
                           }`}>
                             #{s.rank}
                           </span>
                         </td>
-                        <td className="py-2.5 px-3 font-semibold text-slate-200">
+                        <td className="py-3 px-4 font-medium text-[#F1F5F9]">
                           <div className="flex items-center space-x-2">
                             <span>{s.strategy.replace(/_/g, " ")}</span>
                             {isTop && (
-                              <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-1.5 py-0.2 rounded font-mono">
+                              <span className="text-[10px] bg-[#10B981]/20 text-[#10B981] border border-[#10B981]/30 px-1.5 py-0.2 rounded font-sans font-semibold">
                                 OPTIMAL
                               </span>
                             )}
                           </div>
                         </td>
-                        <td className="py-2.5 px-3 font-bold text-cyan-300">
+                        <td className="py-3 px-4 text-right font-semibold text-[#3B82F6] num-tabular">
                           {s.composite_score} / 100
                         </td>
-                        <td className="py-2.5 px-3 text-slate-300 font-semibold">
+                        <td className="py-3 px-4 text-right font-medium text-[#F1F5F9] num-tabular">
                           {s.sharpe_ratio}
                         </td>
-                        <td className="py-2.5 px-3 text-slate-300">
+                        <td className="py-3 px-4 text-right text-[#F1F5F9] num-tabular">
                           {s.profit_factor >= 99 ? "∞ (No Losses)" : `${s.profit_factor}x`}
                         </td>
-                        <td className="py-2.5 px-3 text-slate-300">
+                        <td className="py-3 px-4 text-right text-[#F1F5F9] num-tabular">
                           {s.win_rate_pct}%
                         </td>
-                        <td className="py-2.5 px-3 text-amber-300">
+                        <td className="py-3 px-4 text-right text-[#F59E0B] num-tabular">
                           {s.max_drawdown_pct}%
                         </td>
-                        <td className={`py-2.5 px-3 font-bold ${s.net_profit_usd >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                        <td className={`py-3 px-4 text-right font-semibold num-tabular ${
+                          s.net_profit_usd >= 0 ? "text-[#10B981]" : "text-[#EF4444]"
+                        }`}>
                           ${s.net_profit_usd?.toFixed(2)}
                         </td>
-                        <td className="py-2.5 px-3 text-slate-400">
+                        <td className="py-3 px-4 text-right text-[#94A3B8] num-tabular">
                           {s.avg_holding_seconds ? `${Math.round(s.avg_holding_seconds)}s` : "--"}
                         </td>
-                        <td className="py-2.5 px-3 text-slate-400">
+                        <td className="py-3 px-4 text-right text-[#94A3B8] num-tabular">
                           {s.avg_slippage_bps ? `${s.avg_slippage_bps} bps` : "--"}
                         </td>
-                        <td className="py-2.5 px-3">
-                          <span className={`px-2 py-0.5 rounded text-[10px] border ${
+                        <td className="py-3 px-4 text-center">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-medium border ${
                             s.confidence_level?.includes("HIGH")
-                              ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/30"
+                              ? "bg-[#10B981]/10 text-[#10B981] border-[#10B981]/30"
                               : s.confidence_level?.includes("MEDIUM")
-                              ? "bg-blue-500/10 text-blue-300 border-blue-500/30"
-                              : "bg-amber-500/10 text-amber-300 border-amber-500/30"
+                              ? "bg-[#3B82F6]/10 text-[#60A5FA] border-[#3B82F6]/30"
+                              : "bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/30"
                           }`}>
                             {s.confidence_level}
                           </span>
@@ -490,58 +508,60 @@ export default function StrategyEvaluationDashboard({ onRefresh }: StrategyEvalu
       {activeTab === "regimes" && (
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
-              <span className="text-xs font-mono text-slate-400 uppercase">Current Real-Time Regime</span>
-              <div className="text-lg font-bold text-cyan-300 mt-1 flex items-center space-x-2">
+            <div className="fintech-card p-4">
+              <span className="text-xs text-[#94A3B8]">Current Real-Time Regime</span>
+              <div className="text-lg font-semibold text-[#F1F5F9] mt-1 flex items-center space-x-2">
                 <span>{regimesData?.current_market_regime?.primary_regime?.replace(/_/g, " ") || "CALCULATING"}</span>
               </div>
-              <p className="text-xs text-slate-400 mt-2 font-mono">
-                Confidence: <strong className="text-slate-200">{Math.round((regimesData?.current_market_regime?.confidence || 0.8) * 100)}%</strong>
+              <p className="text-xs text-[#94A3B8] mt-2">
+                Classification Confidence: <strong className="text-[#F1F5F9]">{Math.round((regimesData?.current_market_regime?.confidence || 0.8) * 100)}%</strong>
               </p>
-              <div className="mt-2 text-[11px] font-mono text-slate-500">
-                Safeguard: Zero forward prices used. Backward-looking SMA & return variance only.
+              <div className="mt-2 text-[11px] text-[#94A3B8]">
+                Safeguard: Backward-looking SMA &amp; return variance only. Zero forward prices used.
               </div>
             </div>
 
-            <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4 md:col-span-2">
-              <span className="text-xs font-mono text-slate-400 uppercase">Identified Microstructure Risks</span>
+            <div className="fintech-card p-4 md:col-span-2">
+              <span className="text-xs text-[#94A3B8]">Identified Microstructure Risks</span>
               <div className="flex flex-wrap gap-2 mt-2">
                 {regimesData?.current_market_regime?.identified_risks?.map((r: string, i: number) => (
-                  <span key={i} className="px-2.5 py-1 bg-red-500/10 border border-red-500/30 text-red-300 rounded text-xs font-mono">
+                  <span key={i} className="px-2.5 py-1 bg-[#EF4444]/10 border border-[#EF4444]/30 text-[#EF4444] rounded-lg text-xs font-medium">
                     ⚠️ {r}
                   </span>
-                )) || <span className="text-xs font-mono text-slate-500">No active regime risks detected.</span>}
+                )) || <span className="text-xs text-[#94A3B8]">No active regime risks detected.</span>}
               </div>
             </div>
           </div>
 
           {/* Regime Attribution Matrix */}
-          <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
-            <h3 className="text-sm font-semibold text-slate-200 mb-2">Strategy Regime Attribution & Underperformance Detection</h3>
-            <p className="text-xs text-slate-400 mb-3 font-mono">
-              Empirical matrix tracking strategy efficacy across all 6 regimes without look-ahead bias:
+          <div className="fintech-card p-5">
+            <h3 className="text-sm font-semibold text-[#F1F5F9] mb-1">
+              Strategy Regime Attribution &amp; Underperformance Detection
+            </h3>
+            <p className="text-xs text-[#94A3B8] mb-4">
+              Empirical matrix tracking strategy efficacy across all market regimes without look-ahead bias:
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {regimesData?.regime_attribution_matrix &&
                 Object.entries(regimesData.regime_attribution_matrix).map(([regimeName, data]: [string, any]) => (
-                  <div key={regimeName} className="bg-slate-800/40 border border-slate-700/60 rounded-lg p-3 text-xs font-mono">
-                    <div className="flex items-center justify-between pb-1.5 border-b border-slate-700">
-                      <strong className="text-cyan-300">{regimeName.replace(/_/g, " ")}</strong>
-                      <span className="text-[10px] text-slate-400">{data.total_samples || 0} samples</span>
+                  <div key={regimeName} className="bg-[#151922] border border-[#2A3445] rounded-lg p-3 text-xs">
+                    <div className="flex items-center justify-between pb-2 border-b border-[#2A3445]">
+                      <strong className="text-[#F1F5F9] font-medium">{regimeName.replace(/_/g, " ")}</strong>
+                      <span className="text-[10px] text-[#94A3B8]">{data.total_samples || 0} samples</span>
                     </div>
 
-                    <div className="mt-2 space-y-1">
+                    <div className="mt-2.5 space-y-1.5">
                       <div className="flex justify-between">
-                        <span className="text-slate-400">Optimal Strategy:</span>
-                        <span className="text-emerald-300 font-semibold">{data.optimal_strategy || "ARBITRAGE"}</span>
+                        <span className="text-[#94A3B8]">Optimal Strategy:</span>
+                        <span className="text-[#10B981] font-medium">{data.optimal_strategy || "ARBITRAGE"}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-slate-400">Worst Strategy:</span>
-                        <span className="text-red-300 font-semibold">{data.underperforming_strategy || "NONE"}</span>
+                        <span className="text-[#94A3B8]">Worst Strategy:</span>
+                        <span className="text-[#EF4444] font-medium">{data.underperforming_strategy || "NONE"}</span>
                       </div>
                       {data.warning && (
-                        <div className="mt-2 text-[10px] text-amber-300 bg-amber-500/10 p-1.5 rounded border border-amber-500/30">
+                        <div className="mt-2 text-[11px] text-[#F59E0B] bg-[#F59E0B]/10 p-2 rounded-md border border-[#F59E0B]/30">
                           ⚠️ {data.warning}
                         </div>
                       )}
@@ -556,16 +576,18 @@ export default function StrategyEvaluationDashboard({ onRefresh }: StrategyEvalu
       {/* TAB 3: WALK-FORWARD RISK OPTIMIZATION */}
       {activeTab === "risk_opt" && (
         <div className="space-y-4">
-          <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+          <div className="fintech-card p-5">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-4 border-b border-[#2A3445]">
               <div>
-                <h3 className="text-sm font-semibold text-slate-200 flex items-center space-x-2">
-                  <span>Walk-Forward Risk Optimization (IS 70% / OOS 30%)</span>
-                  <span className="text-[10px] bg-blue-500/20 text-blue-300 border border-blue-500/40 px-2 py-0.5 rounded font-mono">
-                    NO AUTO-RELAXATION
+                <div className="flex items-center space-x-2">
+                  <h3 className="text-sm font-semibold text-[#F1F5F9]">
+                    Walk-Forward Risk Optimization (IS 70% / OOS 30%)
+                  </h3>
+                  <span className="text-[10px] bg-[#3B82F6]/10 text-[#60A5FA] border border-[#3B82F6]/30 px-2 py-0.5 rounded font-medium">
+                    Strict Approval Gating
                   </span>
-                </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
+                </div>
+                <p className="text-xs text-[#94A3B8] mt-0.5">
                   Evaluates 7 core risk parameters chronologically to eliminate overfitting. All changes remain strictly pending manual sign-off.
                 </p>
               </div>
@@ -573,7 +595,7 @@ export default function StrategyEvaluationDashboard({ onRefresh }: StrategyEvalu
               <button
                 onClick={handleRunWalkForward}
                 disabled={actionLoading}
-                className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-mono font-bold flex items-center space-x-1.5 shadow transition-all self-start"
+                className="px-3.5 py-1.5 bg-[#3B82F6] hover:bg-blue-600 text-white rounded-lg text-xs font-medium flex items-center space-x-1.5 transition self-start"
               >
                 <Play className="h-3.5 w-3.5" />
                 <span>Run Walk-Forward Analysis</span>
@@ -583,7 +605,7 @@ export default function StrategyEvaluationDashboard({ onRefresh }: StrategyEvalu
             {/* Recommendations List */}
             <div className="mt-4 space-y-3">
               {recommendations.length === 0 ? (
-                <div className="p-8 text-center text-slate-500 text-xs font-mono bg-slate-800/20 rounded-lg">
+                <div className="p-8 text-center text-[#94A3B8] text-xs bg-[#151922] rounded-xl border border-[#2A3445]">
                   No risk parameter modifications recommended. Current baseline configuration is optimal for observed regimes.
                 </div>
               ) : (
@@ -593,49 +615,49 @@ export default function StrategyEvaluationDashboard({ onRefresh }: StrategyEvalu
                   return (
                     <div
                       key={rec.id}
-                      className={`p-3.5 rounded-lg border text-xs font-mono transition-all ${
+                      className={`p-4 rounded-xl border text-xs transition ${
                         isPending
-                          ? "bg-slate-800/60 border-amber-500/40"
+                          ? "bg-[#151922] border-[#F59E0B]/40"
                           : isApproved
-                          ? "bg-emerald-950/20 border-emerald-500/40"
-                          : "bg-slate-800/30 border-slate-700/40 opacity-70"
+                          ? "bg-[#10B981]/5 border-[#10B981]/40"
+                          : "bg-[#151922]/50 border-[#2A3445] opacity-70"
                       }`}
                     >
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                         <div>
                           <div className="flex items-center space-x-2">
-                            <span className="font-bold text-slate-100 text-sm">{rec.parameter_name}</span>
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                            <span className="font-semibold text-[#F1F5F9] text-sm">{rec.parameter_name}</span>
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-medium border ${
                               isPending
-                                ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                                ? "bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/30"
                                 : isApproved
-                                ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
-                                : "bg-red-500/20 text-red-300 border-red-500/40"
+                                ? "bg-[#10B981]/10 text-[#10B981] border-[#10B981]/30"
+                                : "bg-[#EF4444]/10 text-[#EF4444] border-[#EF4444]/30"
                             }`}>
                               {rec.status}
                             </span>
                             {rec.is_relaxation ? (
-                              <span className="px-1.5 py-0.2 bg-red-500/20 text-red-300 text-[10px] rounded border border-red-500/30">
-                                CAUTION: LIMIT RELAXATION
+                              <span className="px-1.5 py-0.2 bg-[#EF4444]/10 text-[#EF4444] text-[10px] rounded border border-[#EF4444]/30 font-medium">
+                                Caution: Limit Relaxation
                               </span>
                             ) : (
-                              <span className="px-1.5 py-0.2 bg-emerald-500/20 text-emerald-300 text-[10px] rounded border border-emerald-500/30">
-                                SAFETY TIGHTENING
+                              <span className="px-1.5 py-0.2 bg-[#10B981]/10 text-[#10B981] text-[10px] rounded border border-[#10B981]/30 font-medium">
+                                Safety Tightening
                               </span>
                             )}
                           </div>
 
-                          <div className="mt-1 flex items-center space-x-3 text-slate-300">
-                            <span>Current: <strong className="text-slate-100">{rec.current_value}</strong></span>
-                            <span>→</span>
-                            <span>Proposed: <strong className="text-cyan-300">{rec.proposed_value}</strong></span>
+                          <div className="mt-1 flex items-center space-x-3 text-[#94A3B8]">
+                            <span>Current: <strong className="text-[#F1F5F9]">{rec.current_value}</strong></span>
+                            <span>&rarr;</span>
+                            <span>Proposed: <strong className="text-[#3B82F6]">{rec.proposed_value}</strong></span>
                             <span>•</span>
-                            <span>WFE: <strong className="text-emerald-300">{rec.walk_forward_efficiency}</strong></span>
+                            <span>WFE: <strong className="text-[#10B981]">{rec.walk_forward_efficiency}</strong></span>
                             <span>•</span>
-                            <span>Expected: <strong className="text-slate-200">{rec.expected_improvement}</strong></span>
+                            <span>Expected: <strong className="text-[#F1F5F9]">{rec.expected_improvement}</strong></span>
                           </div>
 
-                          <p className="mt-1.5 text-slate-400 text-[11px]">{rec.reason}</p>
+                          <p className="mt-1.5 text-[#94A3B8] text-[11px]">{rec.reason}</p>
                         </div>
 
                         {isPending && (
@@ -643,14 +665,14 @@ export default function StrategyEvaluationDashboard({ onRefresh }: StrategyEvalu
                             <button
                               onClick={() => handleApproveRec(rec.id)}
                               disabled={actionLoading}
-                              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-bold transition-colors"
+                              className="px-3 py-1.5 bg-[#10B981] hover:bg-emerald-600 text-white rounded-lg text-xs font-medium transition"
                             >
                               Approve Change
                             </button>
                             <button
                               onClick={() => setRejectionModalId(rec.id)}
                               disabled={actionLoading}
-                              className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded text-xs transition-colors"
+                              className="px-3 py-1.5 bg-[#202838] hover:bg-[#2A3445] text-[#94A3B8] hover:text-[#F1F5F9] border border-[#2A3445] rounded-lg text-xs transition"
                             >
                               Reject
                             </button>
@@ -658,7 +680,7 @@ export default function StrategyEvaluationDashboard({ onRefresh }: StrategyEvalu
                         )}
 
                         {isApproved && (
-                          <div className="text-[11px] text-emerald-400">
+                          <div className="text-[11px] text-[#10B981]">
                             Approved by: {rec.approved_by || "operator"} at {rec.approved_at?.slice(11, 19)} UTC
                           </div>
                         )}
@@ -677,72 +699,88 @@ export default function StrategyEvaluationDashboard({ onRefresh }: StrategyEvalu
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Simulated Paper Summary */}
-            <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-                <span className="text-xs font-mono text-slate-400 uppercase">Simulated Execution (Paper Mode)</span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/40">
+            <div className="fintech-card p-5">
+              <div className="flex items-center justify-between pb-3 border-b border-[#2A3445]">
+                <span className="text-xs text-[#94A3B8] font-medium">Simulated Execution (Paper Mode)</span>
+                <span className="text-[10px] px-2 py-0.5 rounded bg-[#3B82F6]/10 text-[#60A5FA] border border-[#3B82F6]/30 font-medium">
                   SIMULATED_PAPER
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 mt-3 text-xs font-mono">
+              <div className="grid grid-cols-2 gap-4 mt-4 text-xs">
                 <div>
-                  <span className="text-slate-500">Sample Count:</span>
-                  <div className="text-base font-bold text-slate-200">{execQuality?.simulated_metrics?.sample_count || 0}</div>
+                  <span className="text-[#94A3B8]">Sample Count:</span>
+                  <div className="text-lg font-semibold text-[#F1F5F9] num-tabular mt-0.5">
+                    {execQuality?.simulated_metrics?.sample_count || 0}
+                  </div>
                 </div>
                 <div>
-                  <span className="text-slate-500">Avg Slippage:</span>
-                  <div className="text-base font-bold text-cyan-300">{execQuality?.simulated_metrics?.avg_slippage_bps || 0} bps</div>
+                  <span className="text-[#94A3B8]">Avg Slippage:</span>
+                  <div className="text-lg font-semibold text-[#3B82F6] num-tabular mt-0.5">
+                    {execQuality?.simulated_metrics?.avg_slippage_bps || 0} bps
+                  </div>
                 </div>
                 <div>
-                  <span className="text-slate-500">Quote Delay:</span>
-                  <div className="text-base font-bold text-slate-200">{execQuality?.simulated_metrics?.avg_quote_delay_ms || 0} ms</div>
+                  <span className="text-[#94A3B8]">Quote Delay:</span>
+                  <div className="text-lg font-semibold text-[#F1F5F9] num-tabular mt-0.5">
+                    {execQuality?.simulated_metrics?.avg_quote_delay_ms || 0} ms
+                  </div>
                 </div>
                 <div>
-                  <span className="text-slate-500">Price Impact:</span>
-                  <div className="text-base font-bold text-slate-200">{execQuality?.simulated_metrics?.avg_price_impact_pct || 0}%</div>
+                  <span className="text-[#94A3B8]">Price Impact:</span>
+                  <div className="text-lg font-semibold text-[#F1F5F9] num-tabular mt-0.5">
+                    {execQuality?.simulated_metrics?.avg_price_impact_pct || 0}%
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Real On-Chain Testnet Summary */}
-            <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-                <span className="text-xs font-mono text-slate-400 uppercase">Real On-Chain Execution (HashKey Testnet)</span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold">
+            <div className="fintech-card p-5">
+              <div className="flex items-center justify-between pb-3 border-b border-[#2A3445]">
+                <span className="text-xs text-[#94A3B8] font-medium">Real On-Chain Execution (HashKey Testnet)</span>
+                <span className="text-[10px] px-2 py-0.5 rounded bg-[#F59E0B]/10 text-[#F59E0B] border border-[#F59E0B]/30 font-medium">
                   ON_CHAIN_TESTNET
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 mt-3 text-xs font-mono">
+              <div className="grid grid-cols-2 gap-4 mt-4 text-xs">
                 <div>
-                  <span className="text-slate-500">On-Chain Samples:</span>
-                  <div className="text-base font-bold text-slate-200">{execQuality?.on_chain_metrics?.sample_count || 0}</div>
+                  <span className="text-[#94A3B8]">On-Chain Samples:</span>
+                  <div className="text-lg font-semibold text-[#F1F5F9] num-tabular mt-0.5">
+                    {execQuality?.on_chain_metrics?.sample_count || 0}
+                  </div>
                 </div>
                 <div>
-                  <span className="text-slate-500">Avg Slippage:</span>
-                  <div className="text-base font-bold text-amber-300">{execQuality?.on_chain_metrics?.avg_slippage_bps || 0} bps</div>
+                  <span className="text-[#94A3B8]">Avg Slippage:</span>
+                  <div className="text-lg font-semibold text-[#F59E0B] num-tabular mt-0.5">
+                    {execQuality?.on_chain_metrics?.avg_slippage_bps || 0} bps
+                  </div>
                 </div>
                 <div>
-                  <span className="text-slate-500">Avg Confirmation Delay:</span>
-                  <div className="text-base font-bold text-slate-200">{execQuality?.on_chain_metrics?.avg_quote_delay_ms || 0} ms</div>
+                  <span className="text-[#94A3B8]">Avg Confirmation Delay:</span>
+                  <div className="text-lg font-semibold text-[#F1F5F9] num-tabular mt-0.5">
+                    {execQuality?.on_chain_metrics?.avg_quote_delay_ms || 0} ms
+                  </div>
                 </div>
                 <div>
-                  <span className="text-slate-500">Gas Estimation Error:</span>
-                  <div className="text-base font-bold text-cyan-300">{execQuality?.on_chain_metrics?.avg_gas_estimation_error_pct || 0}%</div>
+                  <span className="text-[#94A3B8]">Gas Estimation Error:</span>
+                  <div className="text-lg font-semibold text-[#3B82F6] num-tabular mt-0.5">
+                    {execQuality?.on_chain_metrics?.avg_gas_estimation_error_pct || 0}%
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Observations and Discrepancies */}
-          <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
-            <h3 className="text-sm font-semibold text-slate-200 mb-2">Microstructural Discrepancy & Reconciliation</h3>
-            <ul className="space-y-1.5 text-xs font-mono text-slate-300">
+          <div className="fintech-card p-5">
+            <h3 className="text-sm font-semibold text-[#F1F5F9] mb-3">Microstructural Discrepancy &amp; Reconciliation</h3>
+            <ul className="space-y-2 text-xs text-[#94A3B8]">
               {execQuality?.comparative_observations?.map((obs: string, idx: number) => (
                 <li key={idx} className="flex items-start space-x-2">
-                  <span className="text-cyan-400">•</span>
-                  <span>{obs}</span>
+                  <span className="text-[#3B82F6]">•</span>
+                  <span className="text-[#F1F5F9]">{obs}</span>
                 </li>
               ))}
             </ul>
@@ -753,11 +791,11 @@ export default function StrategyEvaluationDashboard({ onRefresh }: StrategyEvalu
       {/* TAB 5: EXPERIMENT MANAGEMENT */}
       {activeTab === "experiments" && (
         <div className="space-y-4">
-          <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+          <div className="fintech-card overflow-hidden">
+            <div className="p-5 border-b border-[#2A3445] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h3 className="text-sm font-semibold text-slate-200">Persistent Experiment Management System</h3>
-                <p className="text-xs text-slate-400 font-mono">
+                <h3 className="text-sm font-semibold text-[#F1F5F9]">Persistent Experiment Management System</h3>
+                <p className="text-xs text-[#94A3B8] mt-0.5">
                   Every experiment maintains an immutable configuration snapshot, lifecycle controls, and isolated performance telemetry.
                 </p>
               </div>
@@ -766,7 +804,7 @@ export default function StrategyEvaluationDashboard({ onRefresh }: StrategyEvalu
                 <button
                   onClick={handleCompare}
                   disabled={selectedExpIds.length < 2 || actionLoading}
-                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded text-xs font-mono disabled:opacity-50 transition-colors"
+                  className="px-3 py-1.5 bg-[#202838] hover:bg-[#2A3445] text-[#F1F5F9] border border-[#2A3445] rounded-lg text-xs font-medium disabled:opacity-50 transition"
                 >
                   Compare Selected ({selectedExpIds.length})
                 </button>
@@ -775,27 +813,27 @@ export default function StrategyEvaluationDashboard({ onRefresh }: StrategyEvalu
 
             {/* Experiment Table */}
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs font-mono">
-                <thead className="bg-slate-800/50 text-slate-400 border-b border-slate-700">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-[#151922] text-[#94A3B8] border-b border-[#2A3445]">
                   <tr>
-                    <th className="py-2.5 px-3">Select</th>
-                    <th className="py-2.5 px-3">Experiment ID</th>
-                    <th className="py-2.5 px-3">Name</th>
-                    <th className="py-2.5 px-3">Status</th>
-                    <th className="py-2.5 px-3">Trades</th>
-                    <th className="py-2.5 px-3">Net Profit</th>
-                    <th className="py-2.5 px-3">Sharpe</th>
-                    <th className="py-2.5 px-3">Max DD</th>
-                    <th className="py-2.5 px-3">Actions</th>
+                    <th className="py-3 px-4 font-medium">Select</th>
+                    <th className="py-3 px-4 font-medium">Experiment ID</th>
+                    <th className="py-3 px-4 font-medium">Name</th>
+                    <th className="py-3 px-4 font-medium">Status</th>
+                    <th className="py-3 px-4 font-medium text-right">Trades</th>
+                    <th className="py-3 px-4 font-medium text-right">Net Profit</th>
+                    <th className="py-3 px-4 font-medium text-right">Sharpe</th>
+                    <th className="py-3 px-4 font-medium text-right">Max DD</th>
+                    <th className="py-3 px-4 font-medium text-center">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800">
+                <tbody className="divide-y divide-[#2A3445]">
                   {experiments.map((exp) => {
                     const isSelected = selectedExpIds.includes(exp.id);
                     const isRunning = exp.status === "RUNNING";
                     return (
-                      <tr key={exp.id} className="hover:bg-slate-800/30">
-                        <td className="py-2 px-3">
+                      <tr key={exp.id} className="hover:bg-[#202838]/50 transition">
+                        <td className="py-3 px-4">
                           <input
                             type="checkbox"
                             checked={isSelected}
@@ -803,35 +841,35 @@ export default function StrategyEvaluationDashboard({ onRefresh }: StrategyEvalu
                               if (e.target.checked) setSelectedExpIds([...selectedExpIds, exp.id]);
                               else setSelectedExpIds(selectedExpIds.filter((id) => id !== exp.id));
                             }}
-                            className="rounded border-slate-700 bg-slate-800 text-cyan-500"
+                            className="rounded border-[#2A3445] bg-[#202838] text-[#3B82F6]"
                           />
                         </td>
-                        <td className="py-2 px-3 font-bold text-slate-300">{exp.id}</td>
-                        <td className="py-2 px-3 text-slate-200 font-semibold">{exp.name}</td>
-                        <td className="py-2 px-3">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                        <td className="py-3 px-4 font-mono font-medium text-[#94A3B8]">{exp.id}</td>
+                        <td className="py-3 px-4 text-[#F1F5F9] font-medium">{exp.name}</td>
+                        <td className="py-3 px-4">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-medium border ${
                             isRunning
-                              ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
-                              : "bg-slate-800 text-slate-400 border-slate-700"
+                              ? "bg-[#10B981]/10 text-[#10B981] border-[#10B981]/30"
+                              : "bg-[#202838] text-[#94A3B8] border-[#2A3445]"
                           }`}>
                             {exp.status}
                           </span>
                         </td>
-                        <td className="py-2 px-3 text-slate-300">{exp.combined_metrics?.total_trades || 0}</td>
-                        <td className={`py-2 px-3 font-bold ${(exp.combined_metrics?.net_profit_usd || 0) >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                        <td className="py-3 px-4 text-right text-[#F1F5F9] num-tabular">{exp.combined_metrics?.total_trades || 0}</td>
+                        <td className={`py-3 px-4 text-right font-semibold num-tabular ${(exp.combined_metrics?.net_profit_usd || 0) >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}>
                           ${(exp.combined_metrics?.net_profit_usd || 0).toFixed(2)}
                         </td>
-                        <td className="py-2 px-3 text-slate-300">{exp.combined_metrics?.sharpe_ratio || 0}</td>
-                        <td className="py-2 px-3 text-amber-300">{exp.combined_metrics?.max_drawdown_pct || 0}%</td>
-                        <td className="py-2 px-3">
-                          <div className="flex items-center space-x-1.5">
+                        <td className="py-3 px-4 text-right text-[#F1F5F9] num-tabular">{exp.combined_metrics?.sharpe_ratio || 0}</td>
+                        <td className="py-3 px-4 text-right text-[#F59E0B] num-tabular">{exp.combined_metrics?.max_drawdown_pct || 0}%</td>
+                        <td className="py-3 px-4 text-center">
+                          <div className="flex items-center justify-center space-x-1.5">
                             {isRunning ? (
                               <button
                                 onClick={async () => {
                                   await stopExperiment(exp.id);
                                   loadData();
                                 }}
-                                className="px-2 py-0.5 bg-amber-600/30 text-amber-300 border border-amber-500/40 rounded text-[10px] hover:bg-amber-600/50"
+                                className="px-2 py-1 bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/30 rounded-md text-[11px] hover:bg-[#F59E0B]/30 transition font-medium"
                               >
                                 Pause
                               </button>
@@ -841,14 +879,14 @@ export default function StrategyEvaluationDashboard({ onRefresh }: StrategyEvalu
                                   await resumeExperiment(exp.id);
                                   loadData();
                                 }}
-                                className="px-2 py-0.5 bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 rounded text-[10px] hover:bg-emerald-600/50"
+                                className="px-2 py-1 bg-[#10B981]/20 text-[#10B981] border border-[#10B981]/30 rounded-md text-[11px] hover:bg-[#10B981]/30 transition font-medium"
                               >
                                 Resume
                               </button>
                             )}
                             <button
                               onClick={() => handleExport(exp.id, "json")}
-                              className="px-2 py-0.5 bg-slate-800 text-slate-300 border border-slate-700 rounded text-[10px] hover:bg-slate-700 flex items-center space-x-1"
+                              className="px-2 py-1 bg-[#202838] text-[#94A3B8] hover:text-[#F1F5F9] border border-[#2A3445] rounded-md text-[11px] hover:bg-[#2A3445] flex items-center space-x-1 transition"
                               title="Export JSON"
                             >
                               <FileDown className="h-3 w-3" />
@@ -856,7 +894,7 @@ export default function StrategyEvaluationDashboard({ onRefresh }: StrategyEvalu
                             </button>
                             <button
                               onClick={() => handleExport(exp.id, "csv")}
-                              className="px-2 py-0.5 bg-slate-800 text-slate-300 border border-slate-700 rounded text-[10px] hover:bg-slate-700 flex items-center space-x-1"
+                              className="px-2 py-1 bg-[#202838] text-[#94A3B8] hover:text-[#F1F5F9] border border-[#2A3445] rounded-md text-[11px] hover:bg-[#2A3445] flex items-center space-x-1 transition"
                               title="Export CSV"
                             >
                               <FileDown className="h-3 w-3" />
@@ -871,48 +909,50 @@ export default function StrategyEvaluationDashboard({ onRefresh }: StrategyEvalu
               </table>
             </div>
 
-            {/* Side-by-Side Comparison Modal / Box */}
+            {/* Side-by-Side Comparison Box */}
             {comparisonResult && (
-              <div className="mt-4 p-4 bg-slate-800/60 border border-slate-700 rounded-lg">
+              <div className="m-5 p-4 bg-[#151922] border border-[#2A3445] rounded-xl">
                 <div className="flex justify-between items-center mb-3">
-                  <h4 className="text-xs font-bold text-cyan-300 uppercase">Side-by-Side Experiment Comparison</h4>
-                  <button onClick={() => setComparisonResult(null)} className="text-xs text-slate-400 hover:text-white">✕ Close</button>
+                  <h4 className="text-xs font-semibold text-[#F1F5F9]">Side-by-Side Experiment Comparison</h4>
+                  <button onClick={() => setComparisonResult(null)} className="text-xs text-[#94A3B8] hover:text-[#F1F5F9]">
+                    ✕ Close
+                  </button>
                 </div>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs font-mono">
-                    <thead className="bg-slate-900/60 text-slate-400">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-[#202838] text-[#94A3B8]">
                       <tr>
-                        <th className="p-2">Metric</th>
+                        <th className="p-2.5 font-medium">Metric</th>
                         {comparisonResult.table?.map((c: any) => (
-                          <th key={c.experiment_id} className="p-2">{c.name}</th>
+                          <th key={c.experiment_id} className="p-2.5 font-medium">{c.name}</th>
                         ))}
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800">
+                    <tbody className="divide-y divide-[#2A3445]">
                       <tr>
-                        <td className="p-2 text-slate-400">Net Profit ($)</td>
+                        <td className="p-2.5 text-[#94A3B8]">Net Profit ($)</td>
                         {comparisonResult.table?.map((c: any) => (
-                          <td key={c.experiment_id} className={`p-2 font-bold ${c.net_profit_usd >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                          <td key={c.experiment_id} className={`p-2.5 font-semibold num-tabular ${c.net_profit_usd >= 0 ? "text-[#10B981]" : "text-[#EF4444]"}`}>
                             ${c.net_profit_usd}
                           </td>
                         ))}
                       </tr>
                       <tr>
-                        <td className="p-2 text-slate-400">Sharpe Ratio</td>
+                        <td className="p-2.5 text-[#94A3B8]">Sharpe Ratio</td>
                         {comparisonResult.table?.map((c: any) => (
-                          <td key={c.experiment_id} className="p-2 text-slate-200">{c.sharpe_ratio}</td>
+                          <td key={c.experiment_id} className="p-2.5 text-[#F1F5F9] num-tabular">{c.sharpe_ratio}</td>
                         ))}
                       </tr>
                       <tr>
-                        <td className="p-2 text-slate-400">Max Drawdown</td>
+                        <td className="p-2.5 text-[#94A3B8]">Max Drawdown</td>
                         {comparisonResult.table?.map((c: any) => (
-                          <td key={c.experiment_id} className="p-2 text-amber-300">{c.max_drawdown_pct}%</td>
+                          <td key={c.experiment_id} className="p-2.5 text-[#F59E0B] num-tabular">{c.max_drawdown_pct}%</td>
                         ))}
                       </tr>
                       <tr>
-                        <td className="p-2 text-slate-400">Composite Score</td>
+                        <td className="p-2.5 text-[#94A3B8]">Composite Score</td>
                         {comparisonResult.table?.map((c: any) => (
-                          <td key={c.experiment_id} className="p-2 text-cyan-300 font-bold">{c.composite_score}</td>
+                          <td key={c.experiment_id} className="p-2.5 text-[#3B82F6] font-semibold num-tabular">{c.composite_score}</td>
                         ))}
                       </tr>
                     </tbody>
@@ -928,63 +968,63 @@ export default function StrategyEvaluationDashboard({ onRefresh }: StrategyEvalu
       {activeTab === "health" && (
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
-              <span className="text-xs font-mono text-slate-400 uppercase">System Operational Status</span>
-              <div className="text-xl font-bold text-emerald-400 mt-1 flex items-center space-x-2">
-                <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <div className="fintech-card p-4">
+              <span className="text-xs text-[#94A3B8]">System Operational Status</span>
+              <div className="text-xl font-semibold text-[#10B981] mt-1 flex items-center space-x-2">
+                <span className="h-2 w-2 rounded-full bg-[#10B981]"></span>
                 <span>{systemHealth?.overall_status || "OPERATIONAL"}</span>
               </div>
-              <p className="text-xs text-slate-400 mt-2 font-mono">
+              <p className="text-xs text-[#94A3B8] mt-2">
                 Uptime: {Math.floor((systemHealth?.uptime_seconds || 0) / 3600)}h {Math.floor(((systemHealth?.uptime_seconds || 0) % 3600) / 60)}m
               </p>
             </div>
 
-            <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
-              <span className="text-xs font-mono text-slate-400 uppercase">HashKey Testnet RPC Telemetry</span>
-              <div className="text-xl font-bold text-cyan-300 mt-1">
+            <div className="fintech-card p-4">
+              <span className="text-xs text-[#94A3B8]">HashKey Testnet RPC Telemetry</span>
+              <div className="text-xl font-semibold text-[#F1F5F9] num-tabular mt-1">
                 {systemHealth?.rpc_telemetry?.success_rate_pct || 99.4}%
               </div>
-              <p className="text-xs text-slate-400 mt-2 font-mono">
-                Avg Node Latency: <strong className="text-slate-200">{systemHealth?.rpc_telemetry?.avg_latency_ms || 280} ms</strong>
+              <p className="text-xs text-[#94A3B8] mt-2">
+                Avg Node Latency: <strong className="text-[#F1F5F9]">{systemHealth?.rpc_telemetry?.avg_latency_ms || 280} ms</strong>
               </p>
             </div>
 
-            <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
-              <span className="text-xs font-mono text-slate-400 uppercase">Orchestration Safeguards</span>
-              <div className="text-xl font-bold text-slate-200 mt-1">
+            <div className="fintech-card p-4">
+              <span className="text-xs text-[#94A3B8]">Orchestration Safeguards</span>
+              <div className="text-xl font-semibold text-[#F1F5F9] num-tabular mt-1">
                 {systemHealth?.safeguards?.cycle_success_rate_pct || 99.0}%
               </div>
-              <p className="text-xs text-slate-400 mt-2 font-mono">
-                Suppressed Duplicates: <strong className="text-cyan-300">{systemHealth?.safeguards?.duplicate_opportunities_suppressed || 0}</strong>
+              <p className="text-xs text-[#94A3B8] mt-2">
+                Suppressed Duplicates: <strong className="text-[#3B82F6]">{systemHealth?.safeguards?.duplicate_opportunities_suppressed || 0}</strong>
               </p>
             </div>
           </div>
 
           {/* Seven Specialized Agents Table */}
-          <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
-            <h3 className="text-sm font-semibold text-slate-200 mb-3">Seven Specialized Agents Availability & Latency</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs font-mono">
+          <div className="fintech-card p-5">
+            <h3 className="text-sm font-semibold text-[#F1F5F9] mb-3">Seven Specialized Agents Availability &amp; Latency</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
               {systemHealth?.seven_agents &&
                 Object.entries(systemHealth.seven_agents).map(([agentName, data]: [string, any]) => (
-                  <div key={agentName} className="p-3 bg-slate-800/40 border border-slate-700/60 rounded-lg">
-                    <div className="flex justify-between items-center pb-1 border-b border-slate-700">
-                      <strong className="text-slate-200">{agentName.replace("Agent", "")}</strong>
-                      <span className="px-1.5 py-0.2 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded text-[10px]">
+                  <div key={agentName} className="p-3 bg-[#151922] border border-[#2A3445] rounded-xl">
+                    <div className="flex justify-between items-center pb-1.5 border-b border-[#2A3445]">
+                      <strong className="text-[#F1F5F9] font-medium">{agentName.replace("Agent", "")}</strong>
+                      <span className="px-1.5 py-0.2 bg-[#10B981]/10 text-[#10B981] border border-[#10B981]/30 rounded text-[10px] font-medium">
                         {data.status}
                       </span>
                     </div>
-                    <div className="mt-2 space-y-1 text-slate-400">
+                    <div className="mt-2 space-y-1 text-[#94A3B8]">
                       <div className="flex justify-between">
                         <span>Avg Latency:</span>
-                        <span className="text-cyan-300 font-semibold">{data.avg_latency_ms} ms</span>
+                        <span className="text-[#3B82F6] font-medium num-tabular">{data.avg_latency_ms} ms</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Invocations:</span>
-                        <span className="text-slate-300">{data.total_invocations}</span>
+                        <span className="text-[#F1F5F9] num-tabular">{data.total_invocations}</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Last Pulse:</span>
-                        <span className="text-slate-400">{data.last_seen_seconds_ago}s ago</span>
+                        <span className="text-[#94A3B8]">{data.last_seen_seconds_ago}s ago</span>
                       </div>
                     </div>
                   </div>
@@ -997,31 +1037,31 @@ export default function StrategyEvaluationDashboard({ onRefresh }: StrategyEvalu
       {/* Rejection Modal */}
       {rejectionModalId && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-900 border border-slate-700 rounded-xl p-5 max-w-md w-full shadow-2xl">
-            <h3 className="text-sm font-bold text-slate-100 flex items-center space-x-2">
-              <AlertTriangle className="h-4 w-4 text-amber-400" />
+          <div className="bg-[#191F2B] border border-[#2A3445] rounded-xl p-5 max-w-md w-full shadow-2xl">
+            <h3 className="text-sm font-semibold text-[#F1F5F9] flex items-center space-x-2">
+              <AlertTriangle className="h-4 w-4 text-[#F59E0B]" />
               <span>Reject Risk Recommendation</span>
             </h3>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-[#94A3B8] mt-1">
               Provide formal operator rationale for rejecting this risk optimization proposal:
             </p>
             <textarea
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}
               placeholder="e.g. Rejecting slippage loosening due to impending HashKey Chain network upgrade volatility..."
-              className="mt-3 w-full h-24 bg-slate-800 border border-slate-700 rounded p-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 font-mono"
+              className="mt-3 w-full h-24 fintech-input p-2.5 text-xs text-[#F1F5F9]"
             />
             <div className="mt-4 flex justify-end space-x-2">
               <button
                 onClick={() => setRejectionModalId(null)}
-                className="px-3 py-1.5 bg-slate-800 text-slate-300 rounded text-xs hover:bg-slate-700"
+                className="px-3 py-1.5 bg-[#202838] text-[#94A3B8] hover:text-[#F1F5F9] rounded-lg text-xs transition border border-[#2A3445]"
               >
                 Cancel
               </button>
               <button
                 onClick={handleRejectRec}
                 disabled={!rejectionReason.trim() || actionLoading}
-                className="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded text-xs transition-colors"
+                className="px-3 py-1.5 bg-[#EF4444] hover:bg-red-600 text-white font-medium rounded-lg text-xs transition"
               >
                 Confirm Rejection
               </button>
@@ -1033,53 +1073,53 @@ export default function StrategyEvaluationDashboard({ onRefresh }: StrategyEvalu
       {/* Create Experiment Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-900 border border-slate-700 rounded-xl p-5 max-w-md w-full shadow-2xl">
-            <h3 className="text-sm font-bold text-slate-100 flex items-center space-x-2">
-              <Sliders className="h-4 w-4 text-cyan-400" />
+          <div className="bg-[#191F2B] border border-[#2A3445] rounded-xl p-5 max-w-md w-full shadow-2xl">
+            <h3 className="text-sm font-semibold text-[#F1F5F9] flex items-center space-x-2">
+              <Sliders className="h-4 w-4 text-[#3B82F6]" />
               <span>Create Isolated Experiment</span>
             </h3>
-            <div className="mt-3 space-y-3 text-xs font-mono">
+            <div className="mt-4 space-y-3 text-xs">
               <div>
-                <label className="text-slate-400 block mb-1">Experiment Name</label>
+                <label className="text-[#94A3B8] block mb-1">Experiment Name</label>
                 <input
                   type="text"
                   value={newExpName}
                   onChange={(e) => setNewExpName(e.target.value)}
                   placeholder="e.g. Q4 Volatility Tightening Test"
-                  className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-slate-200 focus:outline-none focus:border-cyan-500"
+                  className="w-full fintech-input p-2.5 text-xs text-[#F1F5F9]"
                 />
               </div>
               <div>
-                <label className="text-slate-400 block mb-1">Description</label>
+                <label className="text-[#94A3B8] block mb-1">Description</label>
                 <input
                   type="text"
                   value={newExpDesc}
                   onChange={(e) => setNewExpDesc(e.target.value)}
                   placeholder="e.g. Evaluating 500bps pool fee tier under high volatility"
-                  className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-slate-200 focus:outline-none focus:border-cyan-500"
+                  className="w-full fintech-input p-2.5 text-xs text-[#F1F5F9]"
                 />
               </div>
               <div>
-                <label className="text-slate-400 block mb-1">Initial Paper Capital ($)</label>
+                <label className="text-[#94A3B8] block mb-1">Initial Paper Capital ($)</label>
                 <input
                   type="number"
                   value={newExpCapital}
                   onChange={(e) => setNewExpCapital(Number(e.target.value))}
-                  className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-slate-200 focus:outline-none focus:border-cyan-500"
+                  className="w-full fintech-input p-2.5 text-xs text-[#F1F5F9]"
                 />
               </div>
             </div>
-            <div className="mt-4 flex justify-end space-x-2">
+            <div className="mt-5 flex justify-end space-x-2">
               <button
                 onClick={() => setShowCreateModal(false)}
-                className="px-3 py-1.5 bg-slate-800 text-slate-300 rounded text-xs hover:bg-slate-700"
+                className="px-3 py-1.5 bg-[#202838] text-[#94A3B8] hover:text-[#F1F5F9] rounded-lg text-xs transition border border-[#2A3445]"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreateExp}
                 disabled={!newExpName.trim() || actionLoading}
-                className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded text-xs transition-colors"
+                className="px-3.5 py-1.5 bg-[#3B82F6] hover:bg-blue-600 text-white font-medium rounded-lg text-xs transition"
               >
                 Create Snapshot
               </button>

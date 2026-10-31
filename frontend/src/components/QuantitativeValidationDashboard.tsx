@@ -238,97 +238,109 @@ export default function QuantitativeValidationDashboard({
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between bg-slate-900/80 border border-slate-800 rounded-xl p-5 shadow-lg backdrop-blur">
-        <div>
-          <div className="flex items-center space-x-2">
-            <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-            <h1 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-              Phase 4: Live Market Validation & Strategy Performance Monitoring
-            </h1>
+      <div className="fintech-card p-5">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <div className="flex items-center space-x-2.5">
+              <div className="h-9 w-9 rounded-lg bg-[#202838] border border-[#2A3445] flex items-center justify-center text-[#3B82F6]">
+                <BarChart3 className="h-5 w-5" />
+              </div>
+              <div>
+                <h1 className="text-xl font-semibold text-[#F1F5F9] tracking-tight">
+                  Quantitative Analytics &amp; Validation
+                </h1>
+                <p className="text-xs text-[#94A3B8] mt-0.5">
+                  Continuous 7-day forward testing, historical backtest simulation, and execution reliability observability.
+                </p>
+              </div>
+            </div>
           </div>
-          <p className="text-xs text-slate-400 mt-1 font-mono">
-            7-Day continuous forward test • Real HSKSwap Testnet QuoterV2 depth • Strict empirical data provenance
-          </p>
-        </div>
 
-        {/* Sub-tab navigation */}
-        <div className="flex items-center space-x-1.5 mt-4 md:mt-0 bg-slate-950 p-1 rounded-lg border border-slate-800 font-mono text-xs overflow-x-auto">
-          <button
-            onClick={() => setActiveSubTab("live_market")}
-            className={`px-3 py-1.5 rounded-md font-semibold transition-all whitespace-nowrap ${
-              activeSubTab === "live_market"
-                ? "bg-emerald-500 text-black shadow font-bold"
-                : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            Live Market Validation (7-Day)
-          </button>
-          <button
-            onClick={() => setActiveSubTab("backtest")}
-            className={`px-3 py-1.5 rounded-md font-semibold transition-all whitespace-nowrap ${
-              activeSubTab === "backtest"
-                ? "bg-cyan-600 text-black shadow font-bold"
-                : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            Historical Backtest
-          </button>
-          <button
-            onClick={() => setActiveSubTab("forward")}
-            className={`px-3 py-1.5 rounded-md font-semibold transition-all whitespace-nowrap ${
-              activeSubTab === "forward"
-                ? "bg-cyan-600 text-black shadow font-bold"
-                : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            Paper Forward Test
-          </button>
-          <button
-            onClick={() => setActiveSubTab("reliability")}
-            className={`px-3 py-1.5 rounded-md font-semibold transition-all whitespace-nowrap ${
-              activeSubTab === "reliability"
-                ? "bg-cyan-600 text-black shadow font-bold"
-                : "text-slate-400 hover:text-slate-200"
-            }`}
-          >
-            Execution Reliability
-          </button>
+          {/* Sub-tab navigation */}
+          <div className="flex items-center space-x-1 border border-[#2A3445] bg-[#151922] p-1 rounded-xl text-xs overflow-x-auto">
+            <button
+              onClick={() => setActiveSubTab("live_market")}
+              className={`px-3 py-1.5 rounded-lg font-medium transition ${
+                activeSubTab === "live_market"
+                  ? "bg-[#3B82F6] text-white"
+                  : "text-[#94A3B8] hover:text-[#F1F5F9] hover:bg-[#202838]"
+              }`}
+            >
+              Live Market Validation
+            </button>
+            <button
+              onClick={() => setActiveSubTab("backtest")}
+              className={`px-3 py-1.5 rounded-lg font-medium transition ${
+                activeSubTab === "backtest"
+                  ? "bg-[#3B82F6] text-white"
+                  : "text-[#94A3B8] hover:text-[#F1F5F9] hover:bg-[#202838]"
+              }`}
+            >
+              Historical Backtest
+            </button>
+            <button
+              onClick={() => setActiveSubTab("forward")}
+              className={`px-3 py-1.5 rounded-lg font-medium transition ${
+                activeSubTab === "forward"
+                  ? "bg-[#3B82F6] text-white"
+                  : "text-[#94A3B8] hover:text-[#F1F5F9] hover:bg-[#202838]"
+              }`}
+            >
+              Paper Forward Test
+            </button>
+            <button
+              onClick={() => setActiveSubTab("reliability")}
+              className={`px-3 py-1.5 rounded-lg font-medium transition ${
+                activeSubTab === "reliability"
+                  ? "bg-[#3B82F6] text-white"
+                  : "text-[#94A3B8] hover:text-[#F1F5F9] hover:bg-[#202838]"
+              }`}
+            >
+              Execution Reliability
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Strict Data Provenance Badges */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div className="p-3 bg-cyan-950/40 border border-cyan-800/60 rounded-lg font-mono">
+        <div className="p-3.5 bg-[#151922] border border-[#2A3445] rounded-xl">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-cyan-400 flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-cyan-400"></span>
-              SYNTHETIC BACKTEST
+            <span className="text-xs font-semibold text-[#F1F5F9] flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-[#3B82F6]"></span>
+              Synthetic Backtest
             </span>
-            <span className="text-[10px] bg-cyan-900/60 text-cyan-300 px-1.5 py-0.5 rounded border border-cyan-700">HISTORICAL</span>
+            <span className="text-[10px] bg-[#202838] text-[#94A3B8] px-2 py-0.5 rounded border border-[#2A3445] font-medium">HISTORICAL</span>
           </div>
-          <p className="text-[10px] text-slate-400 mt-1">Walk-forward candle analysis. Modeled slippage & synthetic fills. 0 gas.</p>
+          <p className="text-[11px] text-[#94A3B8] mt-1.5 leading-relaxed">
+            Walk-forward candle analysis. Modeled slippage &amp; synthetic fills. Zero gas.
+          </p>
         </div>
 
-        <div className="p-3 bg-amber-950/40 border border-amber-800/60 rounded-lg font-mono">
+        <div className="p-3.5 bg-[#151922] border border-[#2A3445] rounded-xl">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-amber-400 flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse"></span>
-              LIVE-MARKET PAPER TEST
+            <span className="text-xs font-semibold text-[#F1F5F9] flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-[#F59E0B]"></span>
+              Live-Market Paper Test
             </span>
-            <span className="text-[10px] bg-amber-900/60 text-amber-300 px-1.5 py-0.5 rounded border border-amber-700">FORWARD 7D</span>
+            <span className="text-[10px] bg-[#202838] text-[#F59E0B] px-2 py-0.5 rounded border border-[#2A3445] font-medium">FORWARD 7D</span>
           </div>
-          <p className="text-[10px] text-slate-400 mt-1">Real continuous HSKSwap QuoterV2 quotes. Real pool depth, simulated non-custodial fills. 0 gas.</p>
+          <p className="text-[11px] text-[#94A3B8] mt-1.5 leading-relaxed">
+            Real continuous HSKSwap QuoterV2 quotes. Real pool depth, non-custodial fills.
+          </p>
         </div>
 
-        <div className="p-3 bg-violet-950/40 border border-violet-800/60 rounded-lg font-mono">
+        <div className="p-3.5 bg-[#151922] border border-[#2A3445] rounded-xl">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-violet-400 flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-violet-400"></span>
-              REAL TESTNET EXECUTION
+            <span className="text-xs font-semibold text-[#F1F5F9] flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-[#10B981]"></span>
+              Real Testnet Execution
             </span>
-            <span className="text-[10px] bg-violet-900/60 text-violet-300 px-1.5 py-0.5 rounded border border-violet-700">ON-CHAIN</span>
+            <span className="text-[10px] bg-[#202838] text-[#10B981] px-2 py-0.5 rounded border border-[#2A3445] font-medium">ON-CHAIN</span>
           </div>
-          <p className="text-[10px] text-slate-400 mt-1">HashKey Testnet (Chain ID 133). Real gas spent. Gated strictly behind manual user approval.</p>
+          <p className="text-[11px] text-[#94A3B8] mt-1.5 leading-relaxed">
+            HashKey Testnet (133). Real native HSK gas. Gated behind manual approval.
+          </p>
         </div>
       </div>
 
