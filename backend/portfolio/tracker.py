@@ -240,6 +240,28 @@ class PortfolioTracker:
             logger.warning(f"Failed to load portfolio state from {self.persistence_file}: {e}")
             return False
 
+    def reset_portfolio(self, initial_capital_usd: float = 1000.0) -> Dict[str, Any]:
+        """Reset portfolio to clean initial capital, clearing closed/open positions and history."""
+        self.initial_capital_usd = initial_capital_usd
+        self.cash_balance_usd = initial_capital_usd
+        self.realized_pnl_total = 0.0
+        self.total_fees_paid_usd = 0.0
+        self.positions.clear()
+        self.trades_history.clear()
+        self.pending_exit_proposals.clear()
+        self.save_to_disk()
+        logger.info(f"Portfolio reset to fresh baseline: ${initial_capital_usd:.2f}")
+        return self.get_portfolio_summary()
+
+    def reanchor_baseline(self) -> Dict[str, Any]:
+        """Re-anchor initial capital baseline to current total portfolio equity, clearing daily drawdown freeze."""
+        invested = sum(p.market_value_usd for p in self.positions.values() if p.is_open)
+        current_equity = self.cash_balance_usd + invested
+        self.initial_capital_usd = current_equity
+        self.save_to_disk()
+        logger.info(f"Portfolio daily baseline re-anchored to current equity: ${current_equity:.2f}")
+        return self.get_portfolio_summary()
+
     def check_exposure_limits(self, trade_size_usd: float, pair: str) -> Dict[str, Any]:
         """
         Validates portfolio and single-asset exposure limits before opening new positions.

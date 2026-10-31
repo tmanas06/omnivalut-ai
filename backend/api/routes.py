@@ -185,6 +185,34 @@ async def get_portfolio():
     orch = get_orchestrator()
     return orch.portfolio_tracker.get_portfolio_summary()
 
+class PortfolioResetRequest(BaseModel):
+    initial_capital_usd: float = 1000.0
+
+@router.post("/api/portfolio/reset")
+async def reset_portfolio(req: Optional[PortfolioResetRequest] = None):
+    orch = get_orchestrator()
+    capital = req.initial_capital_usd if req else 1000.0
+    summary = orch.portfolio_tracker.reset_portfolio(capital)
+    orch.log_decision(
+        "APPROVED",
+        f"reset_{int(time.time())}",
+        f"reset_{int(time.time())}",
+        f"Portfolio reset to fresh baseline ${capital:.2f} by user request. Daily loss limits cleared.",
+    )
+    return {"status": "SUCCESS", "portfolio": summary}
+
+@router.post("/api/portfolio/reanchor")
+async def reanchor_portfolio():
+    orch = get_orchestrator()
+    summary = orch.portfolio_tracker.reanchor_baseline()
+    orch.log_decision(
+        "APPROVED",
+        f"reanchor_{int(time.time())}",
+        f"reanchor_{int(time.time())}",
+        f"Daily drawdown baseline re-anchored to ${summary['total_value_usd']:.2f}. Daily loss limits cleared.",
+    )
+    return {"status": "SUCCESS", "portfolio": summary}
+
 # -----------------------------------------------------------------------------
 # Trade Execution
 # -----------------------------------------------------------------------------

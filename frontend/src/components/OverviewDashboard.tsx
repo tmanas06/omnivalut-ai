@@ -30,6 +30,9 @@ import {
   ShieldAlert,
   Server,
   Database,
+  Sparkles,
+  ArrowRight,
+  RotateCcw,
 } from "lucide-react";
 import {
   fetchSignerStatus,
@@ -44,14 +47,18 @@ import {
   fetchDecisions,
   fetchStrategyLeaderboard,
   fetchSystemHealth,
+  resetPortfolio,
+  reanchorBaseline,
 } from "@/lib/api";
+import { getNativeBalance } from "@/lib/web3";
 
 interface OverviewProps {
   overview: any;
   onNavigate: (tab: string) => void;
+  onRefresh?: () => void;
 }
 
-export default function OverviewDashboard({ overview, onNavigate }: OverviewProps) {
+export default function OverviewDashboard({ overview, onNavigate, onRefresh }: OverviewProps) {
   const p = overview?.portfolio || {};
   const market = overview?.current_market || {};
   const isCircuitHalted = overview?.circuit_breaker_active;
@@ -64,6 +71,11 @@ export default function OverviewDashboard({ overview, onNavigate }: OverviewProp
   const totalPnl = realizedPnl + unrealizedPnl;
   const winRate = p.win_rate_pct ?? 0.0;
   const openPositions = p.open_positions || [];
+
+  // MetaMask User State
+  const [walletAddress, setWalletAddress] = useState<string | null>(null);
+  const [hskBalance, setHskBalance] = useState<string>("0.100");
+  const [isResetting, setIsResetting] = useState<boolean>(false);
 
   // Autonomous Cycle & Safety State
   const [isLoopRunning, setIsLoopRunning] = useState<boolean>(overview?.is_autonomous_loop_running ?? true);
@@ -120,7 +132,43 @@ export default function OverviewDashboard({ overview, onNavigate }: OverviewProp
         if (data) setHealthStatus(data);
       })
       .catch(() => {});
+
+    // Check connected MetaMask account
+    if (typeof window !== "undefined" && (window as any).ethereum) {
+      const ethereum = (window as any).ethereum;
+      ethereum
+        .request({ method: "eth_accounts" })
+        .then((accounts: string[]) => {
+          if (accounts && accounts.length > 0) {
+            setWalletAddress(accounts[0]);
+            getNativeBalance(accounts[0]).then(setHskBalance).catch(() => {});
+          }
+        })
+        .catch(() => {});
+
+      ethereum.on?.("accountsChanged", (accounts: string[]) => {
+        if (accounts && accounts.length > 0) {
+          setWalletAddress(accounts[0]);
+          getNativeBalance(accounts[0]).then(setHskBalance).catch(() => {});
+        } else {
+          setWalletAddress(null);
+        }
+      });
+    }
   }, []);
+
+  const handleResetBaseline = async () => {
+    setIsResetting(true);
+    try {
+      await resetPortfolio(1000.0);
+      alert("Portfolio baseline reset to $1,000.00! Daily loss limits cleared and autonomous trading resumed.");
+      if (onRefresh) onRefresh();
+    } catch (e: any) {
+      alert(e.message || "Failed to reset portfolio baseline");
+    } finally {
+      setIsResetting(false);
+    }
+  };
 
   const handleToggleMode = async () => {
     setIsTogglingMode(true);
@@ -354,6 +402,175 @@ export default function OverviewDashboard({ overview, onNavigate }: OverviewProp
             </div>
           </div>
         )}
+      </div>
+
+      {/* INSTITUTIONAL ACTION HUB: GUIDED USER WORKFLOW FOR CONNECTED WALLET */}
+      <div className="fintech-card p-5 border-[#3B82F6]/30 bg-gradient-to-r from-[#151922] via-[#191F2B] to-[#151922]">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-[#2A3445] pb-4">
+          <div className="flex items-center space-x-3">
+            <div className="h-10 w-10 rounded-xl bg-[#3B82F6]/15 border border-[#3B82F6]/30 flex items-center justify-center shrink-0">
+              <Sparkles className="h-5 w-5 text-[#3B82F6]" />
+            </div>
+            <div>
+              <div className="flex items-center space-x-2">
+                <h3 className="text-sm font-semibold text-[#F1F5F9]">
+                  MetaMask Connected — Guided Trading Center
+                </h3>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/30 font-medium">
+                  HashKey Testnet (133)
+                </span>
+              </div>
+              <p className="text-xs text-[#94A3B8] mt-0.5">
+                Wallet: <span className="font-mono text-[#F1F5F9] font-medium">{walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : "0x814...55a4"}</span>
+                {" • "}Balance: <span className="font-mono text-[#F1F5F9] font-medium">{parseFloat(hskBalance).toFixed(3)} HSK</span>
+                {" • "}Execution Mode: <span className="font-semibold text-[#60A5FA]">{execMode}</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2 self-start lg:self-auto">
+            {/* 1-Click Mode Toggle */}
+            <button
+              onClick={handleToggleMode}
+              disabled={isTogglingMode}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium border flex items-center space-x-1.5 transition-colors ${
+                execMode === "TESTNET"
+                  ? "bg-[#F59E0B]/15 text-[#F59E0B] border-[#F59E0B]/30 hover:bg-[#F59E0B]/25"
+                  : "bg-[#3B82F6]/15 text-[#60A5FA] border-[#3B82F6]/30 hover:bg-[#3B82F6]/25"
+              }`}
+            >
+              <Lock className="h-3.5 w-3.5" />
+              <span>Mode: <strong>{execMode}</strong> (Click to Switch)</span>
+            </button>
+
+            {/* Reset Paper Capital Baseline */}
+            <button
+              onClick={handleResetBaseline}
+              disabled={isResetting}
+              title="Reset portfolio capital baseline to clear daily drawdown limits"
+              className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[#2A3445] bg-[#191F2B] hover:bg-[#202838] text-[#94A3B8] hover:text-[#F1F5F9] flex items-center space-x-1.5 transition-colors disabled:opacity-50"
+            >
+              <RotateCcw className={`h-3.5 w-3.5 ${isResetting ? "animate-spin text-[#3B82F6]" : ""}`} />
+              <span>Reset Baseline</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Dynamic Context / Risk Alert */}
+        {p.daily_loss_pct >= (overview?.risk_policy?.max_daily_loss_pct ?? 3.0) && (
+          <div className="mt-4 p-3.5 rounded-xl bg-[#F59E0B]/10 border border-[#F59E0B]/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="flex items-start space-x-2.5">
+              <ShieldAlert className="h-4 w-4 text-[#F59E0B] shrink-0 mt-0.5" />
+              <div>
+                <span className="font-semibold text-[#F1F5F9] block">
+                  Capital Protection Active: Rule 6 [MAX_DAILY_LOSS]
+                </span>
+                <span className="text-[#94A3B8] text-[11px] block mt-0.5">
+                  The autonomous loop is running, but new algorithmic entries are currently paused because daily drawdown reached {p.daily_loss_pct}% (limit: {overview?.risk_policy?.max_daily_loss_pct ?? 3.0}%). Click &quot;Reset Baseline&quot; to clear this limit and immediately resume paper trades.
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={handleResetBaseline}
+              className="shrink-0 px-3 py-1.5 rounded-lg bg-[#F59E0B] hover:bg-amber-600 text-black font-semibold text-xs transition"
+            >
+              Reset Baseline Capital ($1,000)
+            </button>
+          </div>
+        )}
+
+        {/* 3 Action Pathways Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 mt-4">
+          {/* Pathway 1: Manual Swap on HSKSwap */}
+          <div className="p-4 rounded-xl bg-[#151922] border border-[#2A3445] hover:border-[#3B82F6]/50 transition-all flex flex-col justify-between group">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] uppercase font-semibold text-[#3B82F6] tracking-wider">
+                  Option 1 • Manual DEX Swap
+                </span>
+                <span className="text-[10px] px-2 py-0.5 rounded bg-[#202838] text-[#94A3B8] border border-[#2A3445]">
+                  Live Testnet
+                </span>
+              </div>
+              <h4 className="text-sm font-semibold text-[#F1F5F9]">Trade via Trading Terminal</h4>
+              <p className="text-xs text-[#94A3B8] leading-relaxed">
+                Use your connected 0.100 HSK to swap WHSK &harr; USDT directly on HSKSwap V3 with interactive charts, QuoterV2 pricing, and slippage controls.
+              </p>
+            </div>
+            <button
+              onClick={() => onNavigate("terminal")}
+              className="mt-4 w-full py-2 px-3 rounded-lg bg-[#3B82F6] hover:bg-[#2563EB] text-white text-xs font-semibold flex items-center justify-center space-x-1.5 transition shadow-sm"
+            >
+              <span>Open Trading Terminal</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+
+          {/* Pathway 2: Toggle Testnet Gating */}
+          <div className="p-4 rounded-xl bg-[#151922] border border-[#2A3445] hover:border-[#10B981]/50 transition-all flex flex-col justify-between group">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] uppercase font-semibold text-[#10B981] tracking-wider">
+                  Option 2 • AI Gated Execution
+                </span>
+                <span className={`text-[10px] px-2 py-0.5 rounded border ${
+                  execMode === "TESTNET" ? "bg-[#F59E0B]/15 text-[#F59E0B] border-[#F59E0B]/30" : "bg-[#202838] text-[#94A3B8] border-[#2A3445]"
+                }`}>
+                  {execMode}
+                </span>
+              </div>
+              <h4 className="text-sm font-semibold text-[#F1F5F9]">
+                {execMode === "TESTNET" ? "Awaiting Testnet Trade Signals" : "Enable Testnet Signatures"}
+              </h4>
+              <p className="text-xs text-[#94A3B8] leading-relaxed">
+                {execMode === "TESTNET"
+                  ? "Testnet mode is active! When the 7 AI agents identify a high-Sharpe trade, it will appear above in 'Pending Proposals' for your 1-click MetaMask signature."
+                  : "Switch to TESTNET mode so AI trade candidates require your manual MetaMask signature (Testnet Gating / Rule 12) before broadcasting on-chain."}
+              </p>
+            </div>
+            <button
+              onClick={handleToggleMode}
+              disabled={isTogglingMode}
+              className={`mt-4 w-full py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center space-x-1.5 transition ${
+                execMode === "TESTNET"
+                  ? "bg-[#202838] hover:bg-[#2A3445] text-[#F1F5F9] border border-[#2A3445]"
+                  : "bg-[#10B981] hover:bg-[#059669] text-white"
+              }`}
+            >
+              <span>{execMode === "TESTNET" ? "Switch Back to PAPER" : "Switch to TESTNET Mode"}</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+
+          {/* Pathway 3: Verification Swap */}
+          <div className="p-4 rounded-xl bg-[#151922] border border-[#2A3445] hover:border-[#F59E0B]/50 transition-all flex flex-col justify-between group">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] uppercase font-semibold text-[#F59E0B] tracking-wider">
+                  Option 3 • Pre-Flight Check
+                </span>
+                <span className="text-[10px] px-2 py-0.5 rounded bg-[#202838] text-[#94A3B8] border border-[#2A3445]">
+                  Instant Test
+                </span>
+              </div>
+              <h4 className="text-sm font-semibold text-[#F1F5F9]">Verify Controlled Swap</h4>
+              <p className="text-xs text-[#94A3B8] leading-relaxed">
+                Execute a controlled test swap (0.01 WHSK → USDT) to verify QuoterV2 math, SwapRouter02 routing, and gas estimation on HashKey Testnet.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setShowWalletDetails(true);
+                handlePrepare();
+              }}
+              disabled={isPreparing}
+              className="mt-4 w-full py-2 px-3 rounded-lg bg-[#202838] hover:bg-[#2A3445] text-[#F1F5F9] border border-[#2A3445] text-xs font-semibold flex items-center justify-center space-x-1.5 transition"
+            >
+              <Zap className="h-3.5 w-3.5 text-[#F59E0B]" />
+              <span>{isPreparing ? "Preparing Quote..." : "Prepare Test Swap (0.01 WHSK)"}</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* PENDING PROPOSALS APPROVAL GATING (Level 1 Attention when actions needed) */}
