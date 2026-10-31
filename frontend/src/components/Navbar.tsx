@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Shield, Activity, Wallet, AlertOctagon, RefreshCw, Radio } from "lucide-react";
 import { connectWallet, getNativeBalance } from "@/lib/web3";
-import { toggleEmergencyPause, triggerOrchestrationCycle } from "@/lib/api";
+import { toggleEmergencyPause, triggerOrchestrationCycle, fetchSignerStatus } from "@/lib/api";
 
 interface NavbarProps {
   circuitBreakerActive: boolean;
@@ -20,10 +20,15 @@ export default function Navbar({
 }: NavbarProps) {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [hskBalance, setHskBalance] = useState<string>("0.00");
+  const [signerData, setSignerData] = useState<any>(null);
   const [isCycling, setIsCycling] = useState<boolean>(false);
   const [isTogglingPause, setIsTogglingPause] = useState<boolean>(false);
 
   useEffect(() => {
+    fetchSignerStatus()
+      .then((data) => setSignerData(data))
+      .catch((e) => console.debug("Signer fetch:", e));
+
     if (typeof window !== "undefined" && (window as any).ethereum) {
       const ethereum = (window as any).ethereum;
       ethereum.request({ method: "eth_accounts" }).then((accounts: string[]) => {
@@ -79,6 +84,9 @@ export default function Navbar({
 
   const navItems = [
     { id: "overview", label: "Overview" },
+    { id: "validation", label: "Quant Validation" },
+    { id: "evaluation", label: "Strategy Eval" },
+    { id: "explorer", label: "Testnet Explorer" },
     { id: "agents", label: "Agent Control" },
     { id: "terminal", label: "Trading Terminal" },
     { id: "portfolio", label: "Portfolio" },
@@ -101,8 +109,9 @@ export default function Navbar({
                 <span className="font-extrabold text-base tracking-wider text-slate-100">
                   OMNIVAULT<span className="text-cyan-400">.AI</span>
                 </span>
-                <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-cyan-950/80 text-cyan-400 border border-cyan-800">
-                  HSKChain
+                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/50 font-bold flex items-center space-x-1 shadow-sm">
+                  <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                  <span>TESTNET</span>
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 font-mono">Autonomous DEX Multi-Agent</p>
@@ -126,15 +135,31 @@ export default function Navbar({
             ))}
           </nav>
 
-          {/* Right Actions: Testnet Status, Quick Cycle, Pause, Wallet */}
-          <div className="flex items-center space-x-3">
-            {/* HashKey Testnet Indicator */}
-            <div className="hidden sm:flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800 text-xs">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          {/* Right Actions: Signer, Mode, Quick Cycle, Pause, Wallet */}
+          <div className="flex items-center space-x-2.5">
+            {/* Backend Signer Public Address & HSK Balance */}
+            {signerData?.is_configured && (
+              <div
+                className="hidden lg:flex items-center space-x-2 bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-md text-[11px] font-mono"
+                title={`Dedicated Testnet Signer: ${signerData.address}`}
+              >
+                <span className="h-2 w-2 rounded-full bg-emerald-400"></span>
+                <span className="text-slate-400">Signer:</span>
+                <span className="text-cyan-300 font-bold">
+                  {signerData.address?.slice(0, 6)}...{signerData.address?.slice(-4)}
+                </span>
+                <span className="text-emerald-400 font-semibold">
+                  {signerData.balances?.hsk ?? 0.1} HSK
+                </span>
+              </div>
+            )}
+
+            {/* Execution Mode */}
+            <div className="hidden sm:flex items-center space-x-1 px-2 py-1 rounded bg-slate-900 border border-slate-800 text-[10px] font-mono">
+              <span className="text-slate-500">MODE:</span>
+              <span className={`font-bold ${signerData?.execution_mode?.toLowerCase() === "testnet" ? "text-amber-400" : "text-cyan-400"}`}>
+                {(signerData?.execution_mode || "PAPER").toUpperCase()}
               </span>
-              <span className="font-mono text-slate-300 text-[11px]">HashKey 133</span>
             </div>
 
             {/* Run Cycle Button */}
@@ -145,7 +170,7 @@ export default function Navbar({
               className="px-2.5 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono flex items-center space-x-1 border border-slate-700 disabled:opacity-50"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${isCycling ? "animate-spin text-cyan-400" : ""}`} />
-              <span className="hidden lg:inline">Run Cycle</span>
+              <span className="hidden xl:inline">Run Cycle</span>
             </button>
 
             {/* Emergency Pause Killswitch */}
@@ -176,7 +201,8 @@ export default function Navbar({
                 className="flex items-center space-x-1.5 bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 text-black font-semibold text-xs px-3 py-1.5 rounded-md transition-all shadow"
               >
                 <Wallet className="h-3.5 w-3.5 text-black" />
-                <span>Connect MetaMask</span>
+                <span className="hidden sm:inline">Connect MetaMask</span>
+                <span className="sm:hidden">Connect</span>
               </button>
             )}
           </div>

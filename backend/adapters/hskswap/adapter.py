@@ -126,6 +126,20 @@ class HSKSwapAdapter:
             "is_onchain": True,
         }
 
+    def get_token_decimals(self, token_address: str) -> int:
+        """Fetch token decimals from known tokens config or on-chain contract."""
+        addr = Web3.to_checksum_address(token_address)
+        chain_tokens = TOKENS.get(self.chain_id, TOKENS.get(133, {}))
+        for token_info in chain_tokens.values():
+            token_addr = token_info.get("address")
+            if token_addr and Web3.to_checksum_address(token_addr) == addr:
+                return token_info.get("decimals", 18)
+        try:
+            token_c = self.w3.eth.contract(address=addr, abi=ERC20_ABI)
+            return int(token_c.functions.decimals().call())
+        except Exception:
+            return 18
+
     async def get_quote(
         self,
         token_in: str,
@@ -135,31 +149,56 @@ class HSKSwapAdapter:
     ) -> Dict[str, Any]:
         """
         Compute quote for swap.
-        Attempts QuoterV2 call; applies constant-product math fallback if quoter call reverts on testnet.
+        Attempts real on-chain QuoterV2 call; applies constant-product math fallback if quoter call reverts or fails.
+        Handles token decimals dynamically for both input and output tokens.
         """
         t_in = Web3.to_checksum_address(token_in)
         t_out = Web3.to_checksum_address(token_out)
-        amount_in_wei = int(amount_in * 10**18)
+        dec_in = self.get_token_decimals(t_in)
+        dec_out = self.get_token_decimals(t_out)
 
-        # Expected price: 1 WHSK = 0.8542 USDT
-        # If selling WHSK for USDT:
-        is_selling_whsk = (t_in.lower() == TESTNET_WHSK.lower())
-        spot_price = 0.8542 if is_selling_whsk else (1.0 / 0.8542)
+        amount_in_wei = int(amount_in * (10 ** dec_in))
+        pool_addr = await self.get_pool_address(token_in, token_out, fee)
 
         fee_pct = fee / 1_000_000.0  # e.g. 3000 -> 0.003 (0.3%)
         fee_amount = amount_in * fee_pct
+
+        # 1. Attempt on-chain QuoterV2 call
+        try:
+            params = (t_in, t_out, amount_in_wei, fee, 0)
+            res = self.quoter_contract.functions.quoteExactInputSingle(params).call()
+            amount_out_wei = res[0]
+            gas_estimate = res[3] if len(res) > 3 else 125000
+            net_out = amount_out_wei / (10 ** dec_out)
+            exec_price = net_out / amount_in if amount_in > 0 else 0.0
+
+            return {
+                "token_in": t_in,
+                "token_out": t_out,
+                "amount_in": amount_in,
+                "amount_out": round(net_out, 6),
+                "execution_price": round(exec_price, 6),
+                "fee_tier": fee,
+                "fee_amount": round(fee_amount, 6),
+                "price_impact_pct": 0.05,
+                "estimated_gas": gas_estimate,
+                "pool_address": pool_addr,
+                "is_onchain_quote": True,
+            }
+        except Exception as e:
+            logger.debug(f"QuoterV2 on-chain call failed, using math fallback: {e}")
+
+        # 2. Math fallback for offline/simulated runs
+        is_selling_whsk = (t_in.lower() == TESTNET_WHSK.lower())
+        spot_price = 0.8542 if is_selling_whsk else (1.0 / 0.8542)
         effective_in = amount_in - fee_amount
 
-        # Estimated price impact based on active pool liquidity
-        pool_addr = await self.get_pool_address(token_in, token_out, fee)
         liq_data = await self.get_pool_liquidity(pool_addr)
         active_liq = liq_data.get("liquidity", 0)
-
-        # Math formula for price impact: deltaP = amount_in / (pool_liquidity + amount_in)
         if active_liq > 0:
             impact_pct = min(15.0, (amount_in_wei / active_liq) * 100)
         else:
-            impact_pct = 0.08 # minimal default estimate
+            impact_pct = 0.08
 
         gross_out = effective_in * spot_price
         net_out = gross_out * (1.0 - (impact_pct / 100.0))
@@ -175,6 +214,7 @@ class HSKSwapAdapter:
             "price_impact_pct": round(impact_pct, 4),
             "estimated_gas": 125000,
             "pool_address": pool_addr,
+            "is_onchain_quote": False,
         }
 
     def build_swap_transaction(

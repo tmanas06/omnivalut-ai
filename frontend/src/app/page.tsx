@@ -9,6 +9,9 @@ import PortfolioManager from "@/components/PortfolioManager";
 import RiskCenter from "@/components/RiskCenter";
 import AIAssistant from "@/components/AIAssistant";
 import ActivityLogs from "@/components/ActivityLogs";
+import QuantitativeValidationDashboard from "@/components/QuantitativeValidationDashboard";
+import StrategyEvaluationDashboard from "@/components/StrategyEvaluationDashboard";
+import TestnetExplorer from "@/components/TestnetExplorer";
 import {
   fetchOverview,
   fetchAgents,
@@ -107,6 +110,15 @@ export default function Home() {
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {activeTab === "overview" && (
           <OverviewDashboard overview={overview} onNavigate={setActiveTab} />
+        )}
+        {activeTab === "validation" && (
+          <QuantitativeValidationDashboard onRefresh={refreshAllData} />
+        )}
+        {activeTab === "evaluation" && (
+          <StrategyEvaluationDashboard onRefresh={refreshAllData} />
+        )}
+        {activeTab === "explorer" && (
+          <TestnetExplorer />
         )}
         {activeTab === "agents" && (
           <AgentControlCenter agentsData={agentsData} onRefresh={refreshAllData} />

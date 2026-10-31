@@ -17,6 +17,11 @@ from backend.database.models import (
     AuditLog,
     Conversation,
     Message,
+    MarketObservation,
+    SystemInterruption,
+    Experiment,
+    RiskRecommendation,
+    TestnetTransactionRecord,
 )
 
 __all__ = [
@@ -42,4 +47,10 @@ __all__ = [
     "AuditLog",
     "Conversation",
     "Message",
+    "MarketObservation",
+    "SystemInterruption",
+    "Experiment",
+    "RiskRecommendation",
+    "TestnetTransactionRecord",
 ]
+

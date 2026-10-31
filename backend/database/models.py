@@ -303,3 +303,129 @@ class Message(Base):
     created_at = Column(DateTime(timezone=True), default=utc_now)
 
     conversation = relationship("Conversation", back_populates="messages")
+
+
+class MarketObservation(Base):
+    """
+    Persistent on-chain market observation record.
+    Tracks spot prices, QuoterV2 executable quotes, active liquidity, gas costs,
+    and quote freshness across HashKey Testnet pools.
+    """
+    __tablename__ = "market_observations"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    pair = Column(String(32), nullable=False, index=True)
+    pool_address = Column(String(42), nullable=False, index=True)
+    fee_tier = Column(Integer, nullable=False)
+    timestamp = Column(Float, nullable=False, index=True)
+    spot_price = Column(Float, nullable=False)
+    executable_quote = Column(Float, nullable=False)
+    active_liquidity = Column(String(64), nullable=False)
+    gas_price_gwei = Column(Float, nullable=False)
+    estimated_gas_cost_usd = Column(Float, nullable=False)
+    price_impact_pct = Column(Float, nullable=False)
+    quote_age_seconds = Column(Float, default=0.0)
+    is_fresh = Column(Boolean, default=True)
+    is_simulated = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+
+
+class SystemInterruption(Base):
+    """
+    Records downtime or interruption events during live market experiments
+    to guarantee honesty without inventing missing market observations.
+    """
+    __tablename__ = "system_interruptions"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    interruption_type = Column(String(64), nullable=False)  # BACKEND_DOWNTIME, RPC_TIMEOUT, SHUTDOWN
+    started_at = Column(Float, nullable=False)
+    resumed_at = Column(Float, nullable=True)
+    duration_seconds = Column(Float, nullable=True)
+    reason = Column(Text, nullable=True)
+    missed_observations_count = Column(Integer, default=0)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+
+
+class Experiment(Base):
+    """
+    Phase 5: Persistent Trading Experiment.
+    Maintains an immutable configuration snapshot and evaluation metrics.
+    """
+    __tablename__ = "experiments"
+
+    id = Column(String(64), primary_key=True)
+    name = Column(String(128), nullable=False)
+    description = Column(Text, nullable=True)
+    status = Column(String(32), default="CREATED")  # CREATED, RUNNING, PAUSED, STOPPED, COMPLETED
+    immutable_config_snapshot = Column(JSON, nullable=False)
+    metrics_summary = Column(JSON, default=dict)
+    market_regimes_summary = Column(JSON, default=dict)
+    is_baseline = Column(Boolean, default=False)
+    data_provenance = Column(String(64), default="LIVE_MARKET_PAPER_TEST")
+    started_at = Column(DateTime(timezone=True), nullable=True)
+    ended_at = Column(DateTime(timezone=True), nullable=True)
+    resumed_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+    updated_at = Column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
+
+    recommendations = relationship("RiskRecommendation", back_populates="experiment", cascade="all, delete-orphan")
+
+
+class RiskRecommendation(Base):
+    """
+    Phase 5: Walk-Forward Risk Parameter Recommendation.
+    Requires explicit manual approval before risk limits can be updated.
+    """
+    __tablename__ = "risk_recommendations"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    experiment_id = Column(String(64), ForeignKey("experiments.id"), nullable=False)
+    parameter_name = Column(String(64), nullable=False)
+    current_value = Column(Float, nullable=False)
+    proposed_value = Column(Float, nullable=False)
+    expected_improvement = Column(Text, nullable=False)
+    sharpe_delta = Column(Float, default=0.0)
+    max_drawdown_delta = Column(Float, default=0.0)
+    walk_forward_efficiency = Column(Float, default=1.0)
+    status = Column(String(32), default="PENDING_APPROVAL")  # PENDING_APPROVAL, APPROVED, REJECTED
+    reason = Column(Text, nullable=True)
+    approved_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+
+    experiment = relationship("Experiment", back_populates="recommendations")
+
+
+class TestnetTransactionRecord(Base):
+    """
+    On-chain transaction and execution tracking for the in-app Testnet Explorer.
+    Captures live HashKey Chain transactions, gas analysis, and receipts.
+    """
+    __tablename__ = "testnet_transactions"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    tx_hash = Column(String(66), unique=True, index=True, nullable=False)
+    chain_id = Column(Integer, default=133)
+    block_number = Column(Integer, nullable=True)
+    transaction_type = Column(String(32), default="SWAP")  # SWAP, APPROVE, EXIT, MULTI_STEP_ARBITRAGE
+    pair = Column(String(32), nullable=True)
+    token_in = Column(String(42), nullable=True)
+    token_out = Column(String(42), nullable=True)
+    amount_in = Column(Float, nullable=True)
+    amount_out = Column(Float, nullable=True)
+    effective_price = Column(Float, nullable=True)
+    slippage_bps = Column(Float, default=0.0)
+    from_address = Column(String(42), nullable=False)
+    to_address = Column(String(42), nullable=False)
+    status = Column(String(16), default="PENDING")  # PENDING, CONFIRMED, REVERTED
+    gas_limit = Column(Integer, default=300000)
+    gas_used = Column(Integer, nullable=True)
+    gas_price_gwei = Column(Float, nullable=True)
+    gas_cost_usd = Column(Float, nullable=True)
+    gas_estimation_error_pct = Column(Float, default=0.0)
+    latency_ms = Column(Integer, default=0)
+    error_message = Column(Text, nullable=True)
+    explorer_url = Column(String(255), nullable=True)
+    is_simulated = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), default=utc_now)
+

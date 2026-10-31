@@ -32,28 +32,16 @@ async def lifespan(app: FastAPI):
     orch = get_orchestrator()
     orch.subscribe_events(websocket_event_forwarder)
 
-    # Start background agent cycle loop (runs every 15 seconds)
-    async def cycle_runner():
-        while True:
-            try:
-                await orch.run_orchestration_cycle()
-            except Exception as e:
-                logger.error(f"Error in background orchestration cycle: {e}", exc_info=True)
-            await asyncio.sleep(15)
-
-    background_task = asyncio.create_task(cycle_runner())
-    logger.info("Autonomous Agent Orchestrator background loop started.")
+    # Start autonomous trading intelligence loop (runs every 15 seconds)
+    orch.start_autonomous_loop(interval_seconds=15)
+    logger.info("Autonomous Trading Intelligence continuous cycle started in PAPER mode.")
 
     yield
 
     # Shutdown
-    if background_task:
-        background_task.cancel()
-        try:
-            await background_task
-        except asyncio.CancelledError:
-            pass
+    orch.stop_autonomous_loop()
     logger.info("OmniVault AI Backend Services gracefully stopped.")
+
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

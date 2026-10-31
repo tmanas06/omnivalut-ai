@@ -1,0 +1,51 @@
+{
+  "initial_capital_usd": 1000.0,
+  "cash_balance_usd": 932.3193,
+  "realized_pnl_total": 1.0462,
+  "total_fees_paid_usd": 0.0,
+  "positions": [
+    {
+      "position_id": "f5dda9ef-4c74-422f-ad3f-ae7f257ca1cd",
+      "pair": "WHSK/USDT",
+      "side": "LONG",
+      "entry_price": 0.0183,
+      "current_price": 0.8477,
+      "quantity": 1.2614,
+      "cost_basis_usd": 0.02,
+      "market_value_usd": 1.07,
+      "unrealized_pnl_usd": 1.05,
+      "unrealized_pnl_pct": 4532.24,
+      "realized_pnl_usd": 1.05,
+      "stop_loss": null,
+      "take_profit": null,
+      "max_holding_seconds": 3600,
+      "holding_duration_seconds": 23331.8,
+      "is_open": false,
+      "is_simulated": true,
+      "exit_reason": "MAX_HOLDING_EXPIRED",
+      "pending_exit_proposal": null,
+      "opened_at": "2026-10-30T22:15:36.704832+00:00",
+      "closed_at": "2026-10-31T04:44:28.464183+00:00",
+      "opened_at_epoch": 1793398536.7048318,
+      "closed_at_epoch": 1793421868.464183
+    }
+  ],
+  "trades_history": [
+    {
+      "position_id": "f5dda9ef-4c74-422f-ad3f-ae7f257ca1cd",
+      "pair": "WHSK/USDT",
+      "side": "LONG",
+      "entry_price": 0.0183,
+      "exit_price": 0.8477,
+      "quantity": 1.2614,
+      "realized_pnl_usd": 1.05,
+      "exit_reason": "MAX_HOLDING_EXPIRED",
+      "holding_duration_seconds": 23331.8,
+      "opened_at": 1793398536.7048318,
+      "closed_at": 1793421868.464183,
+      "is_simulated": true
+    }
+  ],
+  "pending_exit_proposals": {},
+  "saved_at": 1793421868.464276
+}

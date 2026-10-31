@@ -7,28 +7,40 @@ from backend.agents.market_intelligence import MarketIntelligenceAgent
 from backend.agents.arbitrage import ArbitrageAgent
 from backend.agents.technical_analysis import TechnicalAnalysisAgent
 from backend.agents.liquidity import LiquidityAgent
+from backend.agents.strategy import StrategyAgent
+from backend.risk.engine import RiskAgent, DeterministicRiskEngine
+from backend.agents.portfolio_agent import PortfolioAgent
+from backend.portfolio.tracker import PortfolioTracker
 
 logger = logging.getLogger("omnivault.supervisor")
 
 class AgentSupervisor:
     """
     Agent Supervisor.
-    Coordinates the autonomous execution lifecycle of all registered trading agents.
+    Coordinates the autonomous execution lifecycle of all 7 specialized trading agents.
     Provides health monitoring, telemetry aggregation, and dynamic control toggles.
     """
 
-    def __init__(self):
+    def __init__(
+        self,
+        risk_engine: Optional[DeterministicRiskEngine] = None,
+        portfolio_tracker: Optional[PortfolioTracker] = None,
+    ):
         self.agents: Dict[str, BaseAgent] = {}
         self.is_running: bool = False
         self._background_task: Optional[asyncio.Task] = None
         self.latest_telemetry: Dict[str, AgentTelemetry] = {}
         self.listeners: List[Any] = []
 
-        # Register default agents
+        # Register the 7 specialized trading intelligence agents
         self.register_agent(MarketIntelligenceAgent())
         self.register_agent(ArbitrageAgent())
         self.register_agent(TechnicalAnalysisAgent())
         self.register_agent(LiquidityAgent())
+        self.register_agent(StrategyAgent())
+        self.register_agent(RiskAgent(risk_engine=risk_engine))
+        self.register_agent(PortfolioAgent(portfolio_tracker=portfolio_tracker))
+
 
     def register_agent(self, agent: BaseAgent):
         self.agents[agent.agent_id] = agent

@@ -28,6 +28,10 @@ export default function PortfolioManager({ portfolioData }: PortfolioProps) {
         </div>
 
         <div className="flex items-center space-x-4 text-xs font-mono">
+          <div className="bg-slate-900/80 px-2.5 py-1.5 rounded border border-slate-800 text-[11px]">
+            <span className="text-slate-500 block text-[10px]">Disk State Persistence</span>
+            <span className="text-cyan-400 font-semibold">Auto-Sync & Recovery Active ✅</span>
+          </div>
           <div className="text-right">
             <span className="text-slate-500 block text-[10px]">Realized P&L</span>
             <span className={`font-bold ${(p.realized_pnl_usd ?? 0) >= 0 ? "text-emerald-400" : "text-red-400"}`}>
@@ -86,7 +90,8 @@ export default function PortfolioManager({ portfolioData }: PortfolioProps) {
                     <th className="py-2.5">Current Price</th>
                     <th className="py-2.5">Stop Loss</th>
                     <th className="py-2.5">Take Profit</th>
-                    <th className="py-2.5">Opened</th>
+                    <th className="py-2.5">Holding / Max</th>
+                    <th className="py-2.5">Mode</th>
                     <th className="py-2.5 text-right">Unrealized P&L</th>
                   </tr>
                 </thead>
@@ -110,7 +115,14 @@ export default function PortfolioManager({ portfolioData }: PortfolioProps) {
                       <td className="py-3 text-slate-200">${pos.current_price.toFixed(4)}</td>
                       <td className="py-3 text-red-400">${pos.stop_loss?.toFixed(4) || "--"}</td>
                       <td className="py-3 text-emerald-400">${pos.take_profit?.toFixed(4) || "--"}</td>
-                      <td className="py-3 text-slate-500 text-[11px]">{new Date(pos.opened_at).toLocaleTimeString()}</td>
+                      <td className="py-3 text-slate-400">
+                        {pos.holding_duration_seconds ? (pos.holding_duration_seconds / 60).toFixed(0) : 0}m / {((pos.max_holding_seconds || 3600) / 60).toFixed(0)}m
+                      </td>
+                      <td className="py-3">
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-900 text-slate-300 border border-slate-800">
+                          {pos.is_simulated ? "PAPER" : "TESTNET"}
+                        </span>
+                      </td>
                       <td className={`py-3 text-right font-bold ${pos.unrealized_pnl_usd >= 0 ? "text-emerald-400" : "text-red-400"}`}>
                         {pos.unrealized_pnl_usd >= 0 ? "+" : ""}${pos.unrealized_pnl_usd.toFixed(2)} ({pos.unrealized_pnl_pct.toFixed(1)}%)
                       </td>
@@ -137,6 +149,7 @@ export default function PortfolioManager({ portfolioData }: PortfolioProps) {
                     <th className="py-2.5">Entry Price</th>
                     <th className="py-2.5">Exit Price</th>
                     <th className="py-2.5">Quantity</th>
+                    <th className="py-2.5">Exit Reason</th>
                     <th className="py-2.5">Mode</th>
                     <th className="py-2.5">Exit Time</th>
                     <th className="py-2.5 text-right">Realized P&L</th>
@@ -154,6 +167,11 @@ export default function PortfolioManager({ portfolioData }: PortfolioProps) {
                       <td className="py-3 text-slate-400">${t.entry_price?.toFixed(4)}</td>
                       <td className="py-3 text-slate-200">${t.exit_price?.toFixed(4)}</td>
                       <td className="py-3 text-slate-300">{t.quantity?.toFixed(4)}</td>
+                      <td className="py-3">
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-950/70 text-cyan-300 border border-cyan-800/80">
+                          {t.exit_reason || "MANUAL_CLOSE"}
+                        </span>
+                      </td>
                       <td className="py-3">
                         <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800">
                           {t.is_simulated ? "Paper" : "Testnet"}

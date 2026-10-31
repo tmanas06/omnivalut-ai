@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 logger = logging.getLogger("omnivault.risk_engine")
 
 class RiskPolicyConfig(BaseModel):
+    # Risk Policy Config fields
     max_trade_allocation_pct: float = Field(default=10.0, description="Max trade size as % of portfolio capital")
     max_slippage_pct: float = Field(default=1.0, description="Max allowable slippage percentage")
     max_daily_loss_pct: float = Field(default=3.0, description="Max daily loss % before circuit breaker halts trading")
@@ -18,7 +19,9 @@ class RiskPolicyConfig(BaseModel):
     data_freshness_seconds: int = Field(default=60, description="Max acceptable quote staleness")
     trading_cooldown_seconds: int = Field(default=120, description="Minimum delay between successive trades on same pair")
     min_risk_reward_ratio: float = Field(default=1.5, description="Minimum ratio between take-profit and stop-loss distance")
+    max_portfolio_exposure_pct: float = Field(default=80.0, description="Max total portfolio invested exposure %")
     emergency_pause_active: bool = Field(default=False, description="Global emergency kill-switch")
+
 
 class RiskEvaluationResult(BaseModel):
     is_approved: bool
@@ -234,6 +237,61 @@ class DeterministicRiskEngine:
             )
 
         # -------------------------------------------------------------
+        # Rule 11: Data Freshness / Staleness Validation
+        # -------------------------------------------------------------
+        quote_age = opportunity.get("age_seconds")
+        if quote_age is None and "quote_timestamp" in opportunity:
+            quote_age = now - opportunity["quote_timestamp"]
+        elif quote_age is None and "timestamp" in opportunity:
+            quote_age = now - opportunity["timestamp"]
+
+        if quote_age is not None and quote_age > self.policy.data_freshness_seconds:
+            return RiskEvaluationResult(
+                is_approved=False,
+                rule_evaluated="DATA_STALENESS",
+                violation_code="STALE_MARKET_DATA",
+                explanation=f"Market data age of {quote_age:.1f}s exceeds maximum allowed freshness window of {self.policy.data_freshness_seconds}s.",
+                evaluated_parameters={
+                    "data_age_seconds": quote_age,
+                    "max_freshness_seconds": self.policy.data_freshness_seconds,
+                },
+            )
+
+        # -------------------------------------------------------------
+        # Rule 12: Profitability After Costs Validation
+        # -------------------------------------------------------------
+        expected_net_profit = opportunity.get("expected_net_profit_usd")
+        strategy_type = opportunity.get("strategy", "")
+        if ("ARBITRAGE" in strategy_type or opportunity.get("requires_positive_net_profit", False)) and expected_net_profit is not None:
+            if expected_net_profit <= 0.0:
+                return RiskEvaluationResult(
+                    is_approved=False,
+                    rule_evaluated="NET_PROFITABILITY",
+                    violation_code="UNPROFITABLE_OPPORTUNITY",
+                    explanation=f"Opportunity expected net profit (${expected_net_profit:.4f}) is non-positive after DEX fees, gas, slippage, and price impact.",
+                    evaluated_parameters={
+                        "expected_net_profit_usd": expected_net_profit,
+                        "strategy": strategy_type,
+                    },
+                )
+
+        # -------------------------------------------------------------
+        # Rule 13: Portfolio Exposure Ceiling
+        # -------------------------------------------------------------
+        curr_total_exposure = portfolio_state.get("total_exposure_pct", 0.0)
+        if curr_total_exposure >= self.policy.max_portfolio_exposure_pct:
+            return RiskEvaluationResult(
+                is_approved=False,
+                rule_evaluated="MAX_PORTFOLIO_EXPOSURE",
+                violation_code="PORTFOLIO_EXPOSURE_EXCEEDED",
+                explanation=f"Total portfolio invested exposure ({curr_total_exposure:.1f}%) equals or exceeds the maximum limit of {self.policy.max_portfolio_exposure_pct:.1f}%.",
+                evaluated_parameters={
+                    "total_exposure_pct": curr_total_exposure,
+                    "max_portfolio_exposure_pct": self.policy.max_portfolio_exposure_pct,
+                },
+            )
+
+        # -------------------------------------------------------------
         # ALL DETERMINISTIC RULES PASSED!
         # -------------------------------------------------------------
         return RiskEvaluationResult(
@@ -253,3 +311,38 @@ class DeterministicRiskEngine:
     def record_trade_executed(self, pair: str, timestamp: Optional[float] = None):
         """Update cooldown tracker upon successful trade execution."""
         self.last_trade_timestamps[pair] = timestamp or time.time()
+
+
+from backend.agents.base import BaseAgent
+
+class RiskAgent(BaseAgent):
+    """
+    Agent 6: Risk Agent.
+    Wraps the Deterministic Risk Engine into the autonomous agent lifecycle.
+    Monitors global risk metrics, evaluates pending opportunity proposals, and tracks policy compliance.
+    """
+
+    def __init__(self, risk_engine: Optional[DeterministicRiskEngine] = None):
+        super().__init__(
+            agent_id="agent_risk",
+            name="Deterministic Risk Agent",
+            description="Independently validates trade opportunities against strict deterministic rules and enforces circuit breakers.",
+            execution_interval_seconds=10,
+            supported_assets=["WHSK", "USDT", "USDC.e"],
+            supported_strategies=["DETERMINISTIC_RULES", "CIRCUIT_BREAKER", "STALENESS_GUARD"],
+        )
+        self.risk_engine = risk_engine or DeterministicRiskEngine()
+        self.evaluations_count = 0
+        self.rejections_count = 0
+
+    async def execute_cycle(self, correlation_id: str) -> Dict[str, Any]:
+        return {
+            "correlation_id": correlation_id,
+            "status": "HEALTHY" if not self.risk_engine.policy.emergency_pause_active else "CIRCUIT_BREAKER_ACTIVE",
+            "emergency_pause_active": self.risk_engine.policy.emergency_pause_active,
+            "total_rules_enforced": 13,
+            "policy": self.risk_engine.policy.model_dump(),
+            "total_evaluations": self.evaluations_count,
+            "total_rejections": self.rejections_count,
+        }
+
