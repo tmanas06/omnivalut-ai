@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import Dict, Any, List, Optional
 import httpx
@@ -27,6 +28,12 @@ from backend.adapters.hskswap.abis import (
 
 logger = logging.getLogger("omnivault.hskswap")
 
+
+async def _run_in_thread(func, *args):
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, func, *args)
+
+
 class HSKSwapAdapter:
     """
     On-chain integration adapter for HSKSwap decentralized exchange on HashKey Chain.
@@ -35,7 +42,7 @@ class HSKSwapAdapter:
     def __init__(self, rpc_url: Optional[str] = None, chain_id: Optional[int] = None):
         self.rpc_url = rpc_url or settings.HSK_RPC_URL
         self.chain_id = chain_id or settings.HSK_CHAIN_ID
-        self.w3 = Web3(Web3.HTTPProvider(self.rpc_url))
+        self.w3 = Web3(Web3.HTTPProvider(self.rpc_url, request_kwargs={"timeout": 3.0}))
         self.factory_address = Web3.to_checksum_address(settings.HSKSWAP_FACTORY_ADDRESS or TESTNET_FACTORY)
         self.router_address = Web3.to_checksum_address(settings.HSKSWAP_ROUTER_ADDRESS or TESTNET_SWAP_ROUTER_02)
         self.quoter_address = Web3.to_checksum_address(settings.HSKSWAP_QUOTER_ADDRESS or TESTNET_QUOTER_V2)
@@ -83,7 +90,9 @@ class HSKSwapAdapter:
         t_a = Web3.to_checksum_address(token_a)
         t_b = Web3.to_checksum_address(token_b)
         try:
-            pool = self.factory_contract.functions.getPool(t_a, t_b, fee).call()
+            def _get_pool():
+                return self.factory_contract.functions.getPool(t_a, t_b, fee).call()
+            pool = await _run_in_thread(_get_pool)
             return pool
         except Exception as e:
             logger.warning(f"Error querying getPool({token_a}, {token_b}, {fee}): {e}")
@@ -96,11 +105,13 @@ class HSKSwapAdapter:
         if addr == "0x0000000000000000000000000000000000000000":
             return {"liquidity": 0, "active": False}
         try:
-            pool_contract = self.w3.eth.contract(address=addr, abi=POOL_ABI)
-            raw_liq = pool_contract.functions.liquidity().call()
+            def _get_liq():
+                pool_contract = self.w3.eth.contract(address=addr, abi=POOL_ABI)
+                return int(pool_contract.functions.liquidity().call())
+            raw_liq = await _run_in_thread(_get_liq)
             return {
                 "pool_address": addr,
-                "liquidity": int(raw_liq),
+                "liquidity": raw_liq,
                 "active": raw_liq > 0,
             }
         except Exception as e:
@@ -122,7 +133,7 @@ class HSKSwapAdapter:
             "price": reference_price,
             "liquidity": liq_info.get("liquidity", 0),
             "pool_address": pool_addr,
-            "timestamp": int(self.w3.eth.get_block("latest")["timestamp"]) if self.is_connected() else 0,
+            "timestamp": int(time.time()),
             "is_onchain": True,
         }
 
@@ -166,7 +177,9 @@ class HSKSwapAdapter:
         # 1. Attempt on-chain QuoterV2 call
         try:
             params = (t_in, t_out, amount_in_wei, fee, 0)
-            res = self.quoter_contract.functions.quoteExactInputSingle(params).call()
+            def _call_quoter():
+                return self.quoter_contract.functions.quoteExactInputSingle(params).call()
+            res = await _run_in_thread(_call_quoter)
             amount_out_wei = res[0]
             gas_estimate = res[3] if len(res) > 3 else 125000
             net_out = amount_out_wei / (10 ** dec_out)
